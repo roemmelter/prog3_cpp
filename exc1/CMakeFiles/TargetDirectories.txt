@@ -1,3 +1,0 @@
-/home/erik/workspace/ccc/exc1/CMakeFiles/rebuild_cache.dir
-/home/erik/workspace/ccc/exc1/CMakeFiles/edit_cache.dir
-/home/erik/workspace/ccc/exc1/CMakeFiles/main.dir
