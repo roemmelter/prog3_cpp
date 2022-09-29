@@ -1,0 +1,1 @@
+/usr/bin/c++    -std=c++98 -Wall -Werror -Wvla -g -O   CMakeFiles/main.dir/account.cpp.o CMakeFiles/main.dir/main.cpp.o  -o main -rdynamic 

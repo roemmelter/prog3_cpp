@@ -1,0 +1,22 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/erik/workspace/ccc/exc1/account.cpp
+account.h
+/home/erik/workspace/ccc/exc1/account.h
+iostream
+-
+
+/home/erik/workspace/ccc/exc1/account.h
+
+/home/erik/workspace/ccc/exc1/main.cpp
+account.h
+/home/erik/workspace/ccc/exc1/account.h
+iostream
+-
+
