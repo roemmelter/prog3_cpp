@@ -1,4 +1,13 @@
-# Ignore archives
+# archives
 archive/
 *.**.zip
 *.zip
+
+# cmake build files
+CMakeFiles/
+CMakeCache*
+Makefile
+cmake*
+
+# build files
+main
