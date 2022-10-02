@@ -9,5 +9,8 @@ CMakeCache*
 Makefile
 cmake*
 
+# Qt build files
+*-build/
+
 # build files
 main
