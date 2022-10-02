@@ -1,0 +1,76 @@
+#pragma once
+
+#include <iostream>
+
+class Complex
+{
+public:
+
+   Complex(double r = 0, double i = 0)
+   {
+      re = r;
+      im = i;
+   }
+
+   Complex operator + (const Complex &b) const
+   {
+      return(Complex(re+b.re, im+b.im));
+   }
+
+   Complex operator - (const Complex &b) const
+   {
+      return(Complex(re-b.re, im-b.im));
+   }
+
+   Complex operator - () const
+   {
+      return(Complex(-re, -im));
+   }
+
+   Complex operator * (const Complex &b) const
+   {
+      return(Complex(re*b.re - im*b.im, re*b.im + im*b.re));
+   }
+
+   Complex operator * (double b) const
+   {
+      return(Complex(re*b, im*b));
+   }
+
+   Complex operator / (const Complex &b) const
+   {
+      double n = b.norm();
+      if (n != 0) return(Complex((b.re*re+b.im*im)/n, (b.re*im - b.im*re)/n));
+      return(Complex(re, im));
+   }
+
+   Complex operator / (double b) const
+   {
+      return(Complex(re/b, im/b));
+   }
+
+   Complex conj() const
+   {
+      return(Complex(re, -im));
+   }
+
+   double norm() const
+   {
+      return(re*re + im*im);
+   }
+
+   friend std::ostream& operator << (std::ostream& out, Complex x);
+
+   double re, im;
+};
+
+inline Complex operator * (double a, Complex b)
+{
+   return(Complex(a*b.re, a*b.im));
+}
+
+inline std::ostream& operator << (std::ostream& out, Complex x)
+{
+   out << "(" << x.re << "," << x.im << ")";
+   return(out);
+}

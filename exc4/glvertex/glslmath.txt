@@ -1,0 +1,513 @@
+GLSLmath version 1.21 as of 20.June.2022
+----
+
+GLSLmath is free software.
+It is distributed under the terms of the MIT license.
+
+The code is copyright (c) 2014-2022 by Stefan Roettger.
+Contact: snroettg at gmail
+
+----
+
+INTRODUCTION:
+
+GLSLmath consists of a single C++ header file.
+
+It allows computer graphics developers to write math operations in C++
+just like one is used to it from GLSL. This includes support for a
+complete set of operators working on vector and matrix classes,
+homogeneous coordinates and quaternions. GLSLmath also features
+testing of geometric intersections between lines, triangles and
+ellipsoids.
+
+The software is easy to install and use, so it is ideal for rapid
+prototyping or teaching purposes. Supported platforms are Unix, MacOS
+X, Windows or any C++ 98 compatible compiler. GLSLmath is mature,
+regression-tested and afaik bug-free.
+
+----
+
+USAGE EXAMPLE:
+
+To install the GLSLmath header, run "sudo make install" in the
+directory of the distribution or simply copy the header to a location
+of your choice. By default the header is installed in
+"usr/local/include" on Linux platforms.
+
+Here is a usage example that declares a position vector in homogeneous
+coordinates and then scales, rotates and translates that vector by
+multiplying it with a corresponding 4x4 matrix:
+
+~~~~
+#include <glslmath.h>
+
+vec4 v(1,0,0);
+
+std::cout << "original vector: " << v << std::endl;
+
+mat4 S = mat4::scale(3);
+mat4 R = mat4::rotate(90, vec3(0,1,0));
+mat4 T = mat4::translate(vec3(1,0,-10));
+mat4 M = T*R*S;
+
+v = M*v; // yields (1,0,-13)
+
+std::cout << "transformed vector: " << v << std::endl;
+~~~~
+
+Note: GLSLmath has been inspired by the glm and slmath libraries,
+which aim to mimic GLSL, as well. In contrast to those, GLSLmath does
+not focus on a complete conforming implementation of GLSL. It rather
+aims to provide a convenient single header file that implements the
+most commonly used subset of linear algebra operations of GLSL so that
+it is easy to use for rapid prototyping and GLSL teaching purposes.
+
+----
+
+PROGRAMMING API:
+
+* Creating a 3D vector:
+
+~~~~
+  vec3 v(0,0,-10);
+~~~~
+
+* Accessing the components of a 3D vector:
+
+~~~~
+  double x = v.x;
+  double y = v.y;
+  double z = v.z;
+~~~~
+
+* Printing a 3D vector:
+
+~~~~
+  std::cout << "v = " << v << std::endl;
+   yields
+  "v = (0, 0, -10)"
+~~~~
+
+* Getting the length and norm of a vector:
+
+~~~~
+  vec3 v(0,3,4);
+  double l = v.length(); // yields 5
+  double l2 = v.norm(); // yields 25
+~~~~
+
+* Averaging two vectors p1 and p2:
+
+~~~~
+  vec3 p1(-10,0,0), p2(10,0,0);
+  vec3 v = 0.5*(p1+p2); // yields (0,0,0)
+~~~~
+
+* Linear interpolation of two vectors p1 and p2:
+
+  Let w be the linear interpolation factor in the range [0..1]:
+
+~~~~
+  vec3 p1(-10,0,0), p2(10,0,0);
+
+  double w = 0.5;
+  vec3 v = (1-w)*p1 + w*p2; // yields (0,0,0)
+~~~~
+
+* Calculating the dot product:
+
+~~~~
+  vec3 a(1,0,0), b(0,0,1);
+  double d = a.dot(b); // yields 0
+~~~~
+
+* Calculating the cross product:
+
+~~~~
+  vec3 a(1,0,0), b(0,0,1);
+  vec3 c = a.cross(b); // yields (0,-1,0)
+~~~~
+
+* Computing a normalized direction vector from two position vectors:
+
+~~~~
+  vec4 p1(0,20,0), p2(0,10,0);
+  vec4 d = (p2-p1).normalize(); // yields (0,-1,0)
+~~~~
+
+  Note that p1 and p2 are position vectors with homogeneous coordinate
+  w=1 and d is a direction vector with homogeneous coordinate w=0!
+
+* Component swizzeling:
+
+~~~~
+  vec4 a(1,2,3,4);
+  vec4 b(a.wzyx());      // yields (4,3,2,1)
+  vec4 c(b.zw(),b.xy()); // yields (2,1,4,3)
+~~~~
+
+* Calculating a normalized triangle normal from the three corners a,b,c:
+
+~~~~
+  vec3 normal = vec3::normal(a,b,c);
+~~~~
+
+* Calculating the area of a triangle with the three vertices a,b,c:
+
+~~~~
+  double area = vec3::area(a,b,c);
+~~~~
+
+* Computing the diffuse lighting term:
+
+  Let d be the direction vector of a light source and v1/v2/v3 the
+  three vertices of a triangle, then the diffuse lighting term is
+  calculated as follows:
+
+~~~~
+  vec3 n = (v2-v1).cross(v3-v1).normalize();
+  double term = fabs(d.dot(n));
+~~~~
+
+* Reflecting a light vector at a surface normal:
+
+  Let v be the incident light vector, let n be the normalized surface
+  normal pointing outwards, then the reflected vector r is computed as
+  follows:
+
+~~~~
+  vec3 v(1,-1,0);
+  vec3 n(0,1,0);
+
+  vec3 r = v.reflect(n); // yields (1,1,0)
+~~~~
+
+* Accessing the components of a color vector:
+
+~~~~
+  vec4 color(1,0,0);  // opaque red
+  double r = color.r; // r=1
+  double g = color.g; // g=0
+  double b = color.b; // b=0
+  double a = color.a; // a=1
+~~~~
+
+* Blending two colors:
+
+~~~~
+  vec4 color1(1,0,0);
+  vec4 color2(0,0,1, 0.25);
+  vec4 mix = color1.blend(color2); // yields (0.75,0,0.25,1)
+~~~~
+
+* Procedural-style vector operations:
+
+  length of a vector v: length(v)
+  dot product of two vectors a and b: dot(a, b)
+  cross product of two vectors a and b: cross(a, b)
+  norm of a vector v: norm(v)
+  normalization of a vector v: normalize(v)
+  reflection of a vector v at a surface normal n: reflect(v, n);
+  linear interpolation of two vectors a and b with factor w: lerp(w, a, b) resp. mix(a, b, w)
+  blending two colors a and b: blend(a, b)
+
+* Creating a 3x3 identity matrix:
+
+~~~~
+  mat3 I;
+   or
+  mat3 M(1);
+~~~~
+
+* Printing a 3x3 matrix:
+
+~~~~
+  std::cout << "I = " << I << std::endl;
+   yields
+  "I = ((1, 0, 0), (0, 1, 0), (0, 0, 1))"
+~~~~
+
+* Creating a 3x3 diagonal matrix:
+
+~~~~
+  mat3 D(vec3(1,2,3));
+~~~~
+
+* Getting the determinant of a 3x3 matrix:
+
+~~~~
+  double d = D.det();
+~~~~
+
+* Creating a 3x3 matrix from three row vectors and multiplying it with a vector:
+
+~~~~
+  mat3 M(vec3(0,1,0),
+         vec3(-1,0,0),
+         vec3(0,0,1));
+
+  vec3 v(-10,0,0);
+  v = M*v; // yields (0,10,0)
+~~~~
+
+* Pretty-printing a 3x3 matrix:
+
+~~~~
+  glslmath::print(M, "M");
+
+  prints:
+
+      /       0             1             0       \
+  M = |      -1             0             0       |
+      \       0             0             1       /
+~~~~
+
+* Creating a 3x3 matrix from three column resp. row vectors:
+
+~~~~
+  mat3 Mc = mat3::columns(vec3(a,b,c), vec3(d,e,f), vec3(g,h,i));
+  mat3 Mr = mat3::rows(a,b,c, d,e,f, g,h,i);
+~~~~
+
+* Creating an affine 4x4 matrix and multiplying it with a position vector:
+
+  The matrix transforms homogeneous points from the local coordinate
+  system to a coordinate system with the origin o and the coordinate
+  axis x, y and z:
+
+~~~~
+  vec3 o = vec3(3,3,3);
+  vec3 x = vec3(0,1,0);
+  vec3 y = vec3(0,0,1);
+  vec3 z = vec3(1,0,0);
+  mat4 T = mat4::transform(o,x,y,z);
+
+  vec4 v(1,0,0);
+  v = T*v; // yields (3,4,3,1)
+~~~~
+
+* Available 4x4 matrix transformations as defined by the OpenGL standard:
+
+  translation by a vector v: mat4::translate(v)
+  rotation about an axis a and an angle of d degrees: mat4::rotate(d, a)
+  scaling with a factor f: mat4::scale(f)
+
+* Procedural-style 4x4 matrix transformations:
+
+  translation by a vector v: translate(M, v)
+  rotation about an axis a and an angle of d degrees: rotate(M, d, a)
+  scaling with a factor f: scale(M, f)
+
+  The above procedures multiply the corresponding transformation
+  matrix onto a given matrix M (from the right-hand side).
+
+* Using mat4 for MVP calculations as defined by the OpenGL
+  standard. The resulting matrix is transferred with glUniform:
+
+~~~~
+  mat4 P = mat4::perspective(90,1,1,100);
+  mat4 V = mat4::lookat(vec3(0,3,10), vec3(0,0,0), vec3(0,1,0));
+  mat4 M = mat4::translate(0,0,-10) * mat4::rotate(90, vec3(0,1,0)) * mat4::scale(3);
+
+  mat4 MVP = P*V*M;
+
+  glUniformMatrix4fv(location, 1, GL_FALSE, (const float *)mat4f(MVP));
+~~~~
+
+  Note that the order of matrix multiplications is the reverse of the
+  logical order of the applied transformations.
+
+  Also note that linear math calculations are done with double
+  precision to avoid numerical instabilities, but the transfer of the
+  final matrix to the gpu is done with single precision float
+  accuracy!
+
+* By default, matrices are multiplied from the right-hand side, e.g.:
+
+~~~~
+  mat4 M = mat4::translate(0,0,-10);
+  M *= mat4::rotate(90, vec3(0,1,0)); // M = T*R
+~~~~
+
+  But matrices can also be multiplied from the left hand-side to
+  reverse the order of transformations:
+
+~~~~
+  mat4 M = mat4::translate(0,0,-10);
+  M <<= mat4::rotate(90, vec3(0,1,0)); // M = R*T
+~~~~
+
+* Calculating the inverse transpose of the MVP matrix (used for normal transformations):
+
+~~~~
+  mat4 M = MVP.invert().transpose();
+~~~~
+
+* Special matrices:
+
+The following matrices are supported as defined by the OpenGL standard:
+
+~~~~
+   // create orthographic projection matrix
+   mat4 Mo = mat4:ortho(left, right, bottom, top, near, far);
+
+   // create frustum projection matrix
+   mat4 Mf = mat4:frustum(left, right, bottom, top, near, far);
+~~~~
+
+For convenience, the following matrices can be constructed as well:
+
+~~~~
+   // create affine transformation matrix consisting of
+   // a rotation resp. non-singular matrix M and a translation vector v
+   mat4 Mt = mat4:transform(M, v);
+
+   // create parallel projection matrix defined by
+   // a plane point p and normal n and a projection direction vector v
+   mat4 Mp = mat4:parallel(p, n, d);
+~~~~
+
+* Procedural-style matrix operations:
+
+  determinant of a matrix M: determinant(M)
+  transposition of a matrix M: transpose(M)
+  inversion of a matrix M: inverse(M)
+
+* Hierarchical modeling with the scoped matrix stack:
+
+  Given the following scene graph with
+
+~~~~
+  + = root node
+  C = camera
+  T0-T2 = modeling transformations
+  G = geometry node
+
+        +
+       / \
+      /   \
+     T0    \
+      |     C
+      |
+      |
+     / \
+    /   \
+   T1   T2
+    \   /
+     \ /
+      |
+      |
+      |
+      G
+~~~~
+
+  Then the matrices needed to render the two instances of the geometry
+  node can be computed with the scoped matrix stack of GLSLmath:
+
+~~~~
+  mat4 V = mat4::lookat(C, ...);
+  mat4 P = mat4::perspective(...);
+
+  load_matrix(P*V);
+  {
+     mult_matrix_scoped(T0);
+     {
+        mult_matrix_scoped(T1);
+        glUniformMatrix4fv(location, 1, GL_FALSE, (const float *)mat4f(top_matrix()));
+        render(G);
+     }
+     {
+        mult_matrix_scoped(T2);
+        glUniformMatrix4fv(location, 1, GL_FALSE, (const float *)mat4f(top_matrix()));
+        render(G);
+     }
+  }
+~~~~
+
+* Hierarchical modeling with the OpenGL matrix stack:
+
+  Given a scene where a glPushMatrix/glPopMatrix pair is required:
+
+~~~~
+   glPushMatrix();
+   ...
+   glPopMatrix();
+~~~~
+
+  The above pair can be rewritten with the OpenGL scoped matrix stack:
+
+~~~~
+   {
+      glPushMatrixScoped();
+      ...
+   }
+~~~~
+
+* Quaternions:
+
+  Transformation of a vector by two consecutive rotations represented
+  as quaternions:
+
+~~~~
+  quat a = quat::rotate(10, vec3(0,1,0));
+  quat b = quat::rotate(80, vec3(0,1,0));
+  quat q = a*b;
+
+  vec3 v(1,0,0);
+  v = q*v; // yields (0,0,1)
+~~~~
+
+* HSV to RGB conversion:
+
+~~~~
+  vec3 rgb1 = glslmath::hsv2rgb(0,1,1); // red
+  vec3 rgb2 = glslmath::hsv2rgb(60,1,1); // yellow
+  vec3 rgb3 = glslmath::hsv2rgb(120,1,0.25); // dark green
+  vec3 rgb4 = glslmath::hsv2rgb(240,0.5,1); // blueish
+~~~~
+
+* 3D Perlin noise:
+
+~~~~
+  vec3 coord(0.5,0.5,0.5);
+  double noise_value = glslnoise::noise(coord);
+  vec3 noise_vector = glslnoise::noise3D(coord);
+~~~~
+
+* Ray/plane intersection testing:
+
+  Let p be the start point and d be the direction vector of a half ray
+  (denoted by [p->d]). Then the distance l to a plane defined by a
+  point o on the plane and the plane normal n is:
+
+~~~~
+   vec3 p(0,0,0), d(1,1,1); // ray definition
+   vec3 o(1,0,0), n(1,0,0); // plane definition
+
+   double l = glslmath::intersect_ray_plane(p,d.normalize(), o,n); // signed euclidean distance
+
+   if (l!=DBL_MAX) // plane is not parallel to half ray
+      if (l>=0) // half ray hits plane in the right direction
+      {
+         vec h = p+l*d; // hit point
+         ...
+      }
+~~~~
+
+  Likewise, GLSLmath contains methods, which compute distances resp. intersections between:
+  * a point p and a line segment [a,b]: distance2line(p, a,b)
+  * a ray [p->d] and an unit sphere: intersect_ray_unitsphere(p,d)
+  * a ray [p->d] and an ellipsoid (o, r1/r2/r3): intersect_ray_ellipsoid(p,d, o,r1,r2,r3)
+  * a ray [o->d] and a triangle [a,b,c]: ray_triangle_dist(o,d, a,b,c)
+  plus intersection tests between:
+  * a point p and a sphere (b,r^2): itest_point_sphere(p, b,r2)
+  * a ray [o->d] and a sphere (b,r^2): itest_ray_sphere(o,d, b,r2)
+  * a ray [o->d] and a cone: itest_cone_sphere(o,d, ...)
+  * a ray [o->d] and a bounding box: itest_ray_bbox(o,d, ...)
+  * and some more ...
+
+----
+
+Now, if you like this software, please just use it happily ever after!
+
+Stefan

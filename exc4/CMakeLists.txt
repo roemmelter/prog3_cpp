@@ -1,0 +1,428 @@
+# cmake build file
+
+PROJECT(QtFramework)
+
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.12)
+
+IF (POLICY CMP0072)
+   CMAKE_POLICY(SET CMP0072 NEW)
+ENDIF (POLICY CMP0072)
+
+INCLUDE(CheckCXXCompilerFlag)
+CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
+CHECK_CXX_COMPILER_FLAG("-std=c++1z" COMPILER_SUPPORTS_CXX17)
+
+OPTION(BUILD_WITH_CXX11 "Use C++11 standard." ${COMPILER_SUPPORTS_CXX11})
+OPTION(BUILD_WITH_CXX17 "Use C++17 standard." ${COMPILER_SUPPORTS_CXX17})
+
+SET(QT4_SEARCH_PATH "/usr/local/qt4" CACHE PATH "Search path for manual Qt4 installations")
+SET(QT5_SEARCH_PATH "/usr/local/qt5" CACHE PATH "Search path for manual Qt5 installations")
+SET(QT6_SEARCH_PATH "/usr/local/qt6" CACHE PATH "Search path for manual Qt6 installations")
+
+# settings:
+
+# search for qt
+IF (UNIX)
+   FIND_PROGRAM(QMAKE_PATH qmake)
+   IF (NOT QMAKE_PATH)
+      FIND_PATH(QMAKE_SEARCH qmake PATHS ${QT4_SEARCH_PATH} ${QT5_SEARCH_PATH} PATH_SUFFIXES "bin" NO_DEFAULT_PATH)
+      IF (QMAKE_SEARCH)
+         SET(QMAKE_PATH "${QMAKE_SEARCH}/qmake")
+      ENDIF (QMAKE_SEARCH)
+   ENDIF (NOT QMAKE_PATH)
+   IF (QMAKE_PATH)
+      EXECUTE_PROCESS(COMMAND bash -c "${QMAKE_PATH} -v | grep Using | sed -e 's/.*\\ \\([0-9]*\\)\\.[0-9]*.*/\\1/'" OUTPUT_VARIABLE QT_MAJOR)
+      STRING(REPLACE "\n" "" QT_MAJOR "${QT_MAJOR}")
+      EXECUTE_PROCESS(COMMAND bash -c "${QMAKE_PATH} -v | grep Using | sed -e 's/.*\\ \\([0-9]*\\.[0-9]*\\.[0-9]*\\).*/\\1/'" OUTPUT_VARIABLE QT_VERSION)
+      STRING(REPLACE "\n" "" QT_VERSION "${QT_VERSION}")
+      EXECUTE_PROCESS(COMMAND bash -c "${QMAKE_PATH} -v | grep Using | sed -e 's/.*\\ in\\ \\(.*\\)lib.*/\\1/'" OUTPUT_VARIABLE QT_PATH)
+      STRING(REPLACE "\n" "" QT_PATH "${QT_PATH}")
+      MESSAGE(STATUS "detected Qt${QT_MAJOR}: ${QT_VERSION} in ${QT_PATH}")
+   ELSE (QMAKE_PATH)
+      MESSAGE(STATUS "unable to detect Qt")
+   ENDIF (QMAKE_PATH)
+ENDIF (UNIX)
+
+# if qt5 or qt6 has been found use it by default
+IF (${QT_MAJOR} MATCHES "6")
+   OPTION(BUILD_WITH_QT5 "Use Qt5 instead of Qt4." OFF)
+   OPTION(BUILD_WITH_QT6 "Use Qt6 instead of Qt5." ON)
+ELSEIF (${QT_MAJOR} MATCHES "5")
+   OPTION(BUILD_WITH_QT5 "Use Qt5 instead of Qt4." ON)
+   OPTION(BUILD_WITH_QT6 "Use Qt6 instead of Qt5." OFF)
+ELSE (${QT_MAJOR} MATCHES "5")
+   OPTION(BUILD_WITH_QT5 "Use Qt5 instead of Qt4." OFF)
+   OPTION(BUILD_WITH_QT6 "Use Qt6 instead of Qt5." OFF)
+ENDIF (${QT_MAJOR} MATCHES "6")
+
+# if qt has not been found use some common search paths
+IF (${QT_MAJOR} MATCHES "4")
+   SET(QT4_DIR ${QT_PATH} CACHE PATH "Qt4 installation path")
+ELSE (${QT_MAJOR} MATCHES "4")
+   SET(QT4_DIR /usr/local/Trolltech/Qt-4.7.4 CACHE PATH "Qt4 installation path")
+ENDIF (${QT_MAJOR} MATCHES "4")
+IF (${QT_MAJOR} MATCHES "5")
+   SET(QT5_DIR ${QT_PATH} CACHE PATH "Qt5 installation path")
+ELSE (${QT_MAJOR} MATCHES "5")
+   SET(QT5_DIR /usr/local/Qt-5.7.1 CACHE PATH "Qt5 installation path")
+ENDIF (${QT_MAJOR} MATCHES "5")
+IF (${QT_MAJOR} MATCHES "6")
+   SET(QT6_DIR ${QT_PATH} CACHE PATH "Qt6 installation path")
+ELSE (${QT_MAJOR} MATCHES "6")
+   SET(QT6_DIR /usr/local/qt6 CACHE PATH "Qt6 installation path")
+ENDIF (${QT_MAJOR} MATCHES "6")
+
+# module build options
+OPTION(BUILD_WITH_PVM "Build PVM module." ON)
+OPTION(BUILD_WITH_DCMTK "Build DCMTK module." OFF)
+OPTION(FIND_DCMTK_MANUALLY "Do not rely on CMake to find DCMTK." ON)
+OPTION(USE_OPENGL_WINDOW "Use OpenGL window instead of Qt painter widget." OFF)
+OPTION(USE_LGL_WINDOW "Use LGL window instead of Qt painter widget." OFF)
+
+# application name
+SET(APPNAME myqtapp)
+
+# sub-directories
+ADD_SUBDIRECTORY(gfx)
+IF (BUILD_WITH_PVM)
+   ADD_SUBDIRECTORY(pvm)
+ENDIF (BUILD_WITH_PVM)
+IF (BUILD_WITH_DCMTK)
+   ADD_SUBDIRECTORY(dicom)
+ENDIF (BUILD_WITH_DCMTK)
+
+# common header target list
+FILE(GLOB HEADERS headers/ *.h)
+
+# glvertex target list
+FILE(GLOB GLVERTEX glvertex/ *.h)
+SET(GLVERTEX_MOCS glvertex/glvertex_qt_codeeditor.h glvertex/glvertex_qt_shadereditor.h)
+
+# header list
+SET(LIB_HDRS
+   src/mainwindow.h
+   painterwidget.h
+   qglwindow.h
+   qlglwindow.h
+   src/qoglwidget.h
+   src/arbeditor.h
+   src/qglarbwindow.h
+   src/glsleditor.h
+   src/qglglslwindow.h
+   src/codeeditor.h
+   )
+
+# module list
+SET(LIB_SRCS
+   src/mainwindow.cpp
+   painterwidget.cpp
+   qglwindow.cpp
+   qlglwindow.cpp
+   src/arbeditor.cpp
+   src/qglarbwindow.cpp
+   src/glsleditor.cpp
+   src/qglglslwindow.cpp
+   src/codeeditor.cpp
+   )
+
+# path to custom cmake modules
+SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMakeModules;${CMAKE_MODULE_PATH}")
+
+# gcc version
+IF (CMAKE_COMPILER_IS_GNUCXX)
+   EXEC_PROGRAM(${CMAKE_CXX_COMPILER} ARGS --version OUTPUT_VARIABLE _compiler_output)
+   STRING(REGEX REPLACE ".* ([0-9]*\\.[0-9]*(\\.[0-9]*)*).*" "\\1" GCC_COMPILER_VERSION ${_compiler_output})
+   MESSAGE(STATUS "gcc version: ${GCC_COMPILER_VERSION}")
+ENDIF (CMAKE_COMPILER_IS_GNUCXX)
+
+# clang version
+IF (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+   EXEC_PROGRAM(${CMAKE_CXX_COMPILER} ARGS --version OUTPUT_VARIABLE _compiler_output)
+   STRING(REGEX REPLACE ".* ([0-9]*\\.[0-9]*(\\.[0-9]*)*).*" "\\1" CLANG_COMPILER_VERSION ${_compiler_output})
+   MESSAGE(STATUS "clang version: ${CLANG_COMPILER_VERSION}")
+ENDIF (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+
+# default Unix compiler definitions
+IF (NOT CMAKE_BUILD_TYPE)
+   IF (UNIX)
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O")
+   ENDIF (UNIX)
+ENDIF (NOT CMAKE_BUILD_TYPE)
+IF (UNIX)
+   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-parameter -Wno-parentheses -Wno-deprecated-declarations")
+   IF (GCC_COMPILER_VERSION VERSION_GREATER "4.4.0" OR CLANG_COMPILER_VERSION VERSION_GREATER "3.0")
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas")
+   ENDIF (GCC_COMPILER_VERSION VERSION_GREATER "4.4.0" OR CLANG_COMPILER_VERSION VERSION_GREATER "3.0")
+   IF (CLANG_COMPILER_VERSION VERSION_GREATER "3.0")
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-dangling-else")
+   ENDIF (CLANG_COMPILER_VERSION VERSION_GREATER "3.0")
+ENDIF (UNIX)
+
+# default C++ standard
+IF (BUILD_WITH_CXX17)
+   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1z -fPIC")
+ELSEIF (BUILD_WITH_CXX11)
+   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+ENDIF (BUILD_WITH_CXX17)
+
+# Windows definitions
+IF (MSVC)
+   SET(CMAKE_CONFIGURATION_TYPES "RelWithDebInfo" CACHE STRING "" FORCE)
+   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4244 /wd4305")
+   ADD_DEFINITIONS(-D_CRT_SECURE_NO_DEPRECATE)
+ENDIF (MSVC)
+
+# path to framework
+IF (NOT FRAMEWORK_PATH)
+   SET(FRAMEWORK_PATH $ENV{FRAMEWORK_PATH})
+   IF (NOT FRAMEWORK_PATH)
+      FIND_PATH(FRAMEWORK_PATH qglwindow.h ${CMAKE_CURRENT_SOURCE_DIR} NO_DEFAULT_PATH)
+      FIND_PATH(FRAMEWORK_PATH qglwindow.h ${CMAKE_CURRENT_SOURCE_DIR})
+   ENDIF (NOT FRAMEWORK_PATH)
+ENDIF (NOT FRAMEWORK_PATH)
+
+# set dependency path
+MACRO(SET_FRAMEWORK_PATH name subdir)
+   SET(${name} ${FRAMEWORK_PATH}
+               ${FRAMEWORK_PATH}/..
+               ${FRAMEWORK_PATH}/../..
+               ${FRAMEWORK_PATH}/${subdir}
+               ${FRAMEWORK_PATH}/../${subdir}
+               ${FRAMEWORK_PATH}/../../${subdir}
+               /usr/local/${subdir} /usr/local /usr
+               /usr/include/${subdir})
+ENDMACRO(SET_FRAMEWORK_PATH)
+
+# paths to dependencies
+SET_FRAMEWORK_PATH(DCMTK_PATH dicom)
+
+# find library macro
+MACRO(FIND_FRAMEWORK_LIBRARY name file path)
+   IF (NOT ${name})
+      FIND_LIBRARY(${name} ${file} PATHS ${path} PATH_SUFFIXES lib lib64 release minsizerel relwithdebinfo NO_DEFAULT_PATH)
+      FIND_LIBRARY(${name} ${file} PATHS ${path} PATH_SUFFIXES lib lib64 release minsizerel relwithdebinfo)
+   ENDIF (NOT ${name})
+ENDMACRO(FIND_FRAMEWORK_LIBRARY)
+
+# find path macro
+MACRO(FIND_FRAMEWORK_PATH name file path)
+   IF (NOT ${name})
+      FIND_PATH(${name} ${file} PATHS ${path} PATH_SUFFIXES include NO_DEFAULT_PATH)
+      FIND_PATH(${name} ${file} PATHS ${path} PATH_SUFFIXES include)
+   ENDIF (NOT ${name})
+ENDMACRO(FIND_FRAMEWORK_PATH)
+
+# non-standard path to Qt4 source installation
+IF (NOT BUILD_WITH_QT5 AND NOT BUILD_WITH_QT6)
+   SET(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH}; ${QT4_DIR};)
+ENDIF (NOT BUILD_WITH_QT5 AND NOT BUILD_WITH_QT6)
+
+# non-standard path to Qt5
+IF (BUILD_WITH_QT5 AND NOT BUILD_WITH_QT6)
+   SET(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH}; ${QT5_DIR};)
+ENDIF (BUILD_WITH_QT5 AND NOT BUILD_WITH_QT6)
+
+# non-standard path to Qt6
+IF (BUILD_WITH_QT6)
+   SET(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH}; ${QT6_DIR};)
+ENDIF (BUILD_WITH_QT6)
+
+# Qt dependency
+IF (BUILD_WITH_QT5 AND NOT BUILD_WITH_QT6)
+   SET(CMAKE_AUTOMOC ON)
+   SET(CMAKE_INCLUDE_CURRENT_DIR ON)
+   FIND_PACKAGE(Qt5Widgets REQUIRED)
+   FIND_PACKAGE(Qt5OpenGL REQUIRED)
+   INCLUDE_DIRECTORIES(${Qt5Widgets_INCLUDE_DIRS})
+   INCLUDE_DIRECTORIES(${Qt5OpenGL_INCLUDE_DIRS})
+   ADD_DEFINITIONS(-DHAVE_QT5)
+   IF (Qt5_POSITION_INDEPENDENT_CODE)
+      SET(CMAKE_POSITION_INDEPENDENT_CODE ON)
+   ELSE (Qt5_POSITION_INDEPENDENT_CODE)
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
+   ENDIF (Qt5_POSITION_INDEPENDENT_CODE)
+ELSEIF (BUILD_WITH_QT6)
+   SET(CMAKE_AUTOMOC ON)
+   SET(CMAKE_INCLUDE_CURRENT_DIR ON)
+   FIND_PACKAGE(Qt6Widgets REQUIRED)
+   FIND_PACKAGE(Qt6OpenGL REQUIRED)
+   FIND_PACKAGE(Qt6OpenGLWidgets REQUIRED)
+   FIND_PACKAGE(Qt6Core5Compat REQUIRED)
+   INCLUDE_DIRECTORIES(${Qt6Widgets_INCLUDE_DIRS})
+   INCLUDE_DIRECTORIES(${Qt6OpenGL_INCLUDE_DIRS})
+   INCLUDE_DIRECTORIES(${Qt6OpenGLWidgets_INCLUDE_DIRS})
+   INCLUDE_DIRECTORIES(${Qt6Core5Compat_INCLUDE_DIRS})
+   ADD_DEFINITIONS(-DHAVE_QT5 -DHAVE_QT6)
+   IF (Qt6_POSITION_INDEPENDENT_CODE)
+      SET(CMAKE_POSITION_INDEPENDENT_CODE ON)
+   ELSE (Qt6_POSITION_INDEPENDENT_CODE)
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt6Widgets_EXECUTABLE_COMPILE_FLAGS}")
+   ENDIF (Qt6_POSITION_INDEPENDENT_CODE)
+ELSE (BUILD_WITH_QT6)
+   SET(QT_USE_QTOPENGL TRUE)
+   FIND_PACKAGE(Qt4 COMPONENTS QtCore QtGui REQUIRED)
+   INCLUDE(${QT_USE_FILE})
+   ADD_DEFINITIONS(${QT_DEFINITIONS})
+ENDIF (BUILD_WITH_QT5 AND NOT BUILD_WITH_QT6)
+
+# OpenGL dependency
+FIND_PACKAGE(OpenGL)
+
+# DCMTK dependency
+IF (BUILD_WITH_DCMTK)
+   IF (FIND_DCMTK_MANUALLY)
+      FIND_FRAMEWORK_LIBRARY(DCMTK_ofstd_LIBRARY ofstd "${DCMTK_PATH}")
+      FIND_FRAMEWORK_LIBRARY(DCMTK_oflog_LIBRARY oflog "${DCMTK_PATH}")
+      FIND_FRAMEWORK_LIBRARY(DCMTK_dcmdata_LIBRARY dcmdata "${DCMTK_PATH}")
+      FIND_FRAMEWORK_LIBRARY(DCMTK_dcmjpeg_LIBRARY dcmjpeg "${DCMTK_PATH}")
+      FIND_FRAMEWORK_LIBRARY(DCMTK_ijg8_LIBRARY ijg8 "${DCMTK_PATH}")
+      FIND_FRAMEWORK_LIBRARY(DCMTK_ijg12_LIBRARY ijg12 "${DCMTK_PATH}")
+      FIND_FRAMEWORK_LIBRARY(DCMTK_ijg16_LIBRARY ijg16 "${DCMTK_PATH}")
+      FIND_FRAMEWORK_LIBRARY(DCMTK_dcmtls_LIBRARY dcmtls "${DCMTK_PATH}")
+      FIND_FRAMEWORK_PATH(DCMTK_INCLUDE_DIR dcmtk/dcmdata/dctk.h "${DCMTK_PATH}")
+      IF (DCMTK_INCLUDE_DIR)
+         SET(DCMTK_FOUND YES)
+      ELSE (DCMTK_INCLUDE_DIR)
+         MESSAGE(STATUS DCMTK NOT FOUND)
+      ENDIF (DCMTK_INCLUDE_DIR)
+   ELSE (FIND_DCMTK_MANUALLY)
+      FIND_PATH(DCMTK_DIR include/dcmtk/config/osconfig.h PATHS /usr/local)
+      FIND_PACKAGE(DCMTK)
+   ENDIF (FIND_DCMTK_MANUALLY)
+ENDIF (BUILD_WITH_DCMTK)
+
+# determine DCMTK status
+IF (BUILD_WITH_DCMTK AND DCMTK_FOUND)
+   INCLUDE_DIRECTORIES(${DCMTK_INCLUDE_DIR})
+   IF (NOT WIN32)
+      ADD_DEFINITIONS(-DHAVE_CONFIG_H)
+   ENDIF (NOT WIN32)
+
+   # find threads library
+   FIND_PACKAGE(Threads)
+
+   # find ZLIB dependency
+   FIND_PACKAGE(ZLIB)
+   INCLUDE_DIRECTORIES(${ZLIB_INCLUDE_DIR})
+
+   # find iconv dependency
+   IF (NOT WIN32)
+      FIND_PACKAGE(ICONV)
+      INCLUDE_DIRECTORIES(${ICONV_INCLUDE_DIR})
+   ENDIF (NOT WIN32)
+
+   ADD_DEFINITIONS(-DHAVE_DCMTK)
+ENDIF (BUILD_WITH_DCMTK AND DCMTK_FOUND)
+
+IF (USE_OPENGL_WINDOW)
+   ADD_DEFINITIONS(-DOPENGL)
+ENDIF (USE_OPENGL_WINDOW)
+
+IF (USE_LGL_WINDOW)
+   ADD_DEFINITIONS(-DLGL)
+ENDIF (USE_LGL_WINDOW)
+
+# moc
+IF (NOT BUILD_WITH_QT5 AND NOT BUILD_WITH_QT6)
+   QT4_WRAP_CPP(MOC_OUTFILES ${LIB_HDRS} ${GLVERTEX_MOCS})
+ENDIF (NOT BUILD_WITH_QT5 AND NOT BUILD_WITH_QT6)
+
+# library
+SET(LIB_NAME ${PROJECT_NAME})
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/src)
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/headers)
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/glvertex)
+ADD_LIBRARY(${LIB_NAME} ${LIB_SRCS} ${LIB_HDRS} ${HEADERS} ${GLVERTEX} ${MOC_OUTFILES})
+
+# executable
+ADD_EXECUTABLE(${APPNAME} main.cpp ${HEADERS} ${GLVERTEX} ${GLVERTEX_MOCS} ${MOC_OUTFILES})
+TARGET_LINK_LIBRARIES(${APPNAME}
+   ${LIB_NAME}
+   ${GFX_LIBRARY}
+   )
+IF (BUILD_WITH_PVM)
+   TARGET_LINK_LIBRARIES(${APPNAME}
+      ${PVM_LIBRARY}
+   )
+ENDIF (BUILD_WITH_PVM)
+IF (BUILD_WITH_DCMTK)
+   TARGET_LINK_LIBRARIES(${APPNAME}
+      ${DICOM_LIBRARY}
+   )
+ENDIF (BUILD_WITH_DCMTK)
+IF (BUILD_WITH_QT5 AND NOT BUILD_WITH_QT6)
+   TARGET_LINK_LIBRARIES(${APPNAME}
+      Qt5::Widgets
+      Qt5::OpenGL
+      )
+ELSEIF (BUILD_WITH_QT6)
+   TARGET_LINK_LIBRARIES(${APPNAME}
+      Qt6::Widgets
+      Qt6::OpenGL
+      Qt6::OpenGLWidgets
+      Qt6::Core5Compat
+      )
+ELSE (BUILD_WITH_QT6)
+   TARGET_LINK_LIBRARIES(${APPNAME}
+      ${QT_LIBRARIES}
+      )
+ENDIF (BUILD_WITH_QT5 AND NOT BUILD_WITH_QT6)
+TARGET_LINK_LIBRARIES(${APPNAME}
+   ${OPENGL_LIBRARIES}
+   )
+IF (UNIX AND NOT MAC)
+   TARGET_LINK_LIBRARIES(${APPNAME}
+      GL GLU
+      )
+ENDIF (UNIX AND NOT MAC)
+IF (BUILD_WITH_DCMTK AND DCMTK_FOUND)
+   IF (FIND_DCMTK_MANUALLY)
+      TARGET_LINK_LIBRARIES(${APPNAME}
+         ${DCMTK_dcmdata_LIBRARY}
+         ${DCMTK_dcmjpeg_LIBRARY}
+         ${DCMTK_ijg8_LIBRARY}
+         ${DCMTK_ijg12_LIBRARY}
+         ${DCMTK_ijg16_LIBRARY}
+         ${DCMTK_dcmtls_LIBRARY}
+         ${DCMTK_oflog_LIBRARY}
+         ${DCMTK_ofstd_LIBRARY}
+         ${CMAKE_THREAD_LIBS_INIT}
+         )
+   ELSE (FIND_DCMTK_MANUALLY)
+      TARGET_LINK_LIBRARIES(${APPNAME}
+         ${DCMTK_LIBRARIES}
+         ${CMAKE_THREAD_LIBS_INIT}
+         )
+   ENDIF (FIND_DCMTK_MANUALLY)
+   IF (ZLIB_FOUND)
+      TARGET_LINK_LIBRARIES(${APPNAME}
+         ${ZLIB_LIBRARY}
+      )
+   ENDIF (ZLIB_FOUND)
+   IF (ICONV_FOUND)
+      TARGET_LINK_LIBRARIES(${APPNAME}
+         ${ICONV_LIBRARY}
+      )
+   ENDIF (ICONV_FOUND)
+ENDIF (BUILD_WITH_DCMTK AND DCMTK_FOUND)
+IF (UNIX AND NOT APPLE)
+   TARGET_LINK_LIBRARIES(${APPNAME} dl rt)
+ENDIF (UNIX AND NOT APPLE)
+
+# install target
+INSTALL(
+   TARGETS ${APPNAME}
+   RUNTIME DESTINATION bin
+   )
+
+# install .desktop file for KDE4 (and Gnome)
+IF (UNIX AND NOT APPLE)
+   FIND_FILE(
+      DESKTOP_FILE_EXISTS
+      ${APPNAME}.desktop
+      )
+   IF (DESKTOP_FILE_EXISTS)
+      INSTALL(FILES ${APPNAME}.desktop DESTINATION /usr/share/applications)
+   ENDIF (DESKTOP_FILE_EXISTS)
+ENDIF (UNIX AND NOT APPLE)

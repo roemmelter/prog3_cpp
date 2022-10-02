@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Exec=myqtapp %U
+Icon=utilities-terminal
+Terminal=false
+Name=MyQtApp
+GenericName=Qt Application Framework
+Comment=Example Qt Application Framework
+Categories=Application;Graphics

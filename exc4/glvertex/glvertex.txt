@@ -1,0 +1,2324 @@
+glVertex version 5.5.1 as of 27.September.2022
+----
+
+The glVertex library is free software.
+It is distributed under the terms of the MIT license.
+
+The code is copyright (c) 2015-2022 by Stefan Roettger.
+Contact: snroettg at gmail
+
+----
+
+INTRODUCTION:
+
+The glVertex software is a header-only C++ library.
+
+It is a convenience wrapper around OpenGL and GLSL. It also allows
+computer graphics developers to use the deprecated legacy OpenGL
+interface within a core profile. In particular it brings back the key
+concepts of the so called immediate mode.
+
+----
+
+QUICK START:
+
+If you are familiar with OpenGL and want to start programming right
+away, please jump to the PROGRAMMING QUICK START section.
+
+----
+
+BACKGROUND:
+
+In OpenGL 3.0 the legacy OpenGL interface was deprecated. This means
+that the so called fixed-function OpenGL pipeline was discarded in
+favor of a programmable pipeline model, which forces the use of vertex
+buffers and GLSL shaders. The main reasons behind this decision were
+rendering performance improvements, the reduction of driver complexity
+and an overall leaner OpenGL interface.
+
+As a result, the complete set of immediate mode OpenGL instructions
+like glVertex() and glColor() was removed from the OpenGL core
+profile. The immediate mode is still available in the OpenGL
+compatibility profile, but in practice this limits the computer
+graphics developer to OpenGL 2.1. If you want to use OpenGL 3.0 or
+higher, you do not have access to immediate mode any longer.
+
+The immediate mode was removed for good reasons. It allows experienced
+computer graphics developers to leverage the full power of vertex
+buffer objects and GLSL shaders. For OpenGL beginners, however, the
+already steep learning curve of OpenGL has become even steeper. What
+is more, there are still many situations, where the old legacy OpenGL
+interface would be helpful: Either for ease of implementation, rapid
+prototyping, teaching purposes or just for backwards
+compatibility. The same holds for all the use cases, where the
+limiting factor is not the vertex stage of the graphics pipeline. This
+includes volume rendering, image composing or any rasterization
+limited graphics algorithm. So there is clearly a need for legacy
+OpenGL even with modern GPUs.
+
+----
+
+GOALS:
+
+The glVertex library aims to bring back the legacy OpenGL
+fixed-function pipeline to ease the use of OpenGL core profiles. It
+tries not to provide a complete conforming implementation of the
+fixed-function pipeline, mainly for the same reasons why OpenGL 3.0
+does not support it any longer. Instead it tries to bring back the
+following key concepts of the fixed-function pipeline:
+
+* specification of vertices and attributes in immediate mode fashion
+* specification of perspective, modeling and viewing matrices in immediate mode fashion
+* matrix stack operations in immediate mode fashion
+* control over a subset of fixed-function features like
+ * blinn-phong lighting
+ * plain 2D and 3D texturing
+ * depth testing and back-face culling
+ * blending and alpha testing
+ * multiple clip planes
+ * fragment-based fog
+ * and polygon mode
+
+This does not imply that rendering performance is compromised using
+the reenabled legacy OpenGL features. The glVertex library will map
+the legacy features to the fast paths available in the OpenGL core
+profile. For example, when specifying vertices in immediate mode, the
+vertices will be automatically added to a vertex buffer object under
+the hood. As a welcome side effect, the creation of vertex buffer
+objects (VBOs) and GLSL shaders is much simplified with the glVertex
+frame work.
+
+Summing up, the glVertex software aims to be easy to install and use,
+so that it is ideal for OpenGL beginners, rapid prototyping or
+teaching purposes. At the same time it is a frame work for efficient
+OpenGL and OpenGL ES development.
+
+Supported platforms are Unix, MacOS, Windows and Android. The single
+dependency is OpenGL (resp. OpenGL ES on mobile platforms).
+
+----
+
+REQUIREMENTS:
+
+The glVertex software depends on OpenGL. So in the following it is
+assumed that the OpenGL drivers and development libraries have been
+installed properly. Since the software is written in C++, a compiler
+such as GCC (Linux/Android), CLANG (MacOS) or MSVC++/MinGW (Windows)
+is required also. Some of the examples given below additionally
+require GLUT, GLFW or Qt as windowing library.
+
+In order to perform an automatic installation of those dependencies
+and the glVertex library on Linux and MacOS, please run the
+"install.sh" script from the command line:
+
+> ./install.sh
+
+To change the default installation path of the glVertex library, we
+set the GLVERTEX_PATH environment variable, before starting the
+installation. This environment variable needs to be set permanently.
+
+On Windows we run the "install.bat" batch file to start the automatic
+installation of the glVertex library:
+
+> install.bat
+
+In order to remove the glVertex library on Linux and MacOS, we run the
+uninstall script:
+
+> ./uninstall.sh
+
+The next section describes the manual installation of the glVertex
+library and its dependencies on the supported platforms. If the
+automatic installation has finished successfully, we can skip this
+section.
+
+----
+
+SUPPORTED PLATFORMS AND REQUIRED PACKAGES:
+
+On Ubuntu 14.04 and 16.04 the installation command for the required packages is:
+> sudo apt-get install g++ cmake freeglut3-dev libglfw-dev libqt4-dev libqt4-opengl-dev
+
+On Ubuntu 17.04 to 19.10 (resp. Debian 8) the installation command for the required packages is:
+> sudo apt-get install g++ cmake freeglut3-dev libglfw3-dev libqt4-dev libqt4-opengl-dev
+
+On Ubuntu 20.04 or later the installation command for the required packages is:
+> sudo apt-get install g++ cmake freeglut3-dev libglfw3-dev qtbase5-dev libqt5-opengl-dev
+
+On Debian 8 to 9 and Linux Mint 18 to 19 the installation command for the required packages is:
+> sudo apt-get install g++ cmake freeglut3-dev libglfw3-dev libqt4-dev libqt4-opengl-dev
+
+On Debian 10+ and Linux Mint 20+ the installation command for the required packages is:
+> sudo apt-get install g++ cmake freeglut3-dev libglfw3-dev qtbase5-dev libqt5opengl5-dev
+
+On OpenSuse 11 to 14 the installation command for the required packages is:
+> sudo zypper install gcc-c++ cmake freeglut-devel libglfw-devel libqt4-devel
+
+On OpenSuse 15+ the installation command for the required packages is:
+> sudo zypper install gcc-c++ cmake freeglut-devel libglfw-devel libqt5-qtbase-devel
+
+On Fedora 19 to 20 the installation command for the required packages is:
+> sudo yum install gcc-c++ cmake freeglut-devel libglfw-devel libqt4-devel
+
+On Fedora 21+ (resp. CentOS 7+) the installation command for the required packages is:
+> sudo yum install gcc-c++ cmake freeglut-devel libglfw-devel qt5-qtbase-devel
+
+On Arch Linux (resp. Manjaro Linux) it is recommended to install the required packages with pacman:
+> sudo pacman -S gcc cmake freeglut glfw-x11 qt4
+
+On MacOS X 10.5 to 10.14 it is mandatory to install XCode first.
+Then we install the following required packages:
+> cmake, glfw, Qt
+
+On MacOS X 10.15 it is also required to install the XCode command line tools:
+> xcode-select --install
+
+On MacOS 11 and 12 it is also required to install at least Qt6
+> brew install qt6 (see https://brew.sh)
+
+For OpenGL ES development it is recommended to install Qt 5.7.1 with Android support from:
+> https://download.qt.io/archive/qt/5.7/5.7.1/qt-opensource-linux-x64-android-5.7.1.run
+Or we install the Qt 5.15 LTS release with Android support from:
+> https://download.qt.io/archive/qt/5.15/5.15.5/qt-opensource-linux-x64-5.15.5.run
+
+On Windows 10 we first install MinGW 7.3 64-bit (from mingw-w64.org)
+and TortoiseSVN (from tortoisesvn.net). Then we download an
+appropriate Qt package for Windows (based on MinGW):
+> https://download.qt.io/archive/qt/5.15/5.15.5/qt-opensource-windows-x86-5.15.5.exe
+Finally, we run the "install.bat" script.
+
+For positively tested Unix platforms see "PLATFORMS.txt".
+
+Other Linux platforms are principally supported, but those platforms
+are not tested in-depth.
+
+----
+
+INSTALLATION:
+
+The glVertex software is a C++ header-only library, so there is not
+much to do for installation purposes:
+
+To install the glVertex development headers, we simply run "sudo make
+install" in the directory of the distribution. By default the headers
+are installed in "/usr/local/include" on Linux platforms. To uninstall
+type "sudo make uninstall".
+
+The above installation procedure is equivalent to copying all headers
+(*.h) from the base distribution directory to a destination directory,
+so if you want to do a manual installation, it is as easy as this:
+
+> cp *.h destination/
+
+----
+
+ONLINE INSTALLER:
+
+The online installer will download the most recent glVertex package
+from the code repository and install the package with all its
+dependencies. Just download the "installer.sh" script and start it
+from the command line:
+
+> ./installer.sh
+
+On Windows we run the "installer.bat" batch file:
+
+> installer.bat
+
+Then the best way to start coding with the glVertex library is
+described in the quick start section. If you are interested in the
+full documentation, please read on.
+
+----
+
+USAGE PRELIMINARIES:
+
+To use the glVertex library, we need to include the "glvertex.h" C++
+header:
+
+~~~~
+ #include <glvertex.h>
+~~~~
+
+While the glVertex library restitutes parts of the legacy OpenGL 1.2
+interface, it aims not to be perfectly compatible with it. To account
+for that, all functions of the glVertex library share a "lgl"
+prefix. So instead of writing
+
+~~~~
+ glVertex3d(0,0,0); // C style
+~~~~
+
+we write
+
+~~~~
+ lglVertex(0,0,0); // C++ style
+~~~~
+
+We may also use the vector and matrix classes of the
+[GLSLmath](glslmath.md) library:
+
+~~~~
+ vec3 v(0,0,0);
+ lglVertex(v);
+~~~~
+
+----
+
+USAGE EXAMPLE:
+
+Here is a usage example that renders a single triangle in immediate
+mode. Under the hood, the immediate mode calls are translated to the
+creation of according vertex buffers (VBOs) and GLSL shaders, which
+simulate the fixed functionality of the legacy OpenGL 1.2 interface:
+
+~~~~
+#include <glvertex.h>
+
+...
+
+// matrix setup
+lglMatrixMode(LGL_PROJECTION);
+lglLoadIdentity();
+lglPerspective(fovy, aspect, nearp, farp);
+lglMatrixMode(LGL_MODELVIEW);
+lglLoadIdentity();
+lglLookAt(0,0,1, 0,0,0, 0,1,0);
+
+// render triangle
+lglBegin(LGL_TRIANGLES);
+   lglColor(1,0,0);
+   lglVertex(-0.5,-0.5,0);
+   lglColor(0,1,0);
+   lglVertex(0.5,-0.5,0);
+   lglColor(0,0,1);
+   lglVertex(0,0.5,0);
+lglEnd();
+~~~~
+
+The above example is available with GLUT as windowing library. It does
+not yet use a core rendering profile. This is achieved with GLFW and
+Qt further below. To compile and run the GLUT example on the Unix or
+Mac command line type:
+
+> make glut && ./glut_example
+
+Or use CMake to compile and run it on the Unix or Mac command line:
+
+> (cd examples; cmake . && make && ./glut_example)
+
+On Windows we use the CMake GUI to create a VC++ project.
+
+----
+
+GLSLMATH USAGE:
+
+Internally, the glVertex package uses the GLSLmath library to perform
+linear math calculations such as the calculation of projection and
+viewing matrices.
+
+For example, the legacy-style matrix setup used in the previous
+example is equivalent to the following linear math calculations using
+[GLSLmath](glslmath.md):
+
+~~~~
+// look at world origin (0,0,0) from (0,0,2) with up being (0,1,0)
+mat4 MV = mat4::lookat(vec3(0,0,2), vec3(0,0,0), vec3(0,1,0));
+// camera perspective defining field-of-view etc.
+mat4 P = mat4::perspective(fovy, aspect, nearp, farp);
+
+// mvp matrix setup
+mat4 MVP = P * MV;
+lglLoadMatrix(MVP);
+~~~~
+
+----
+
+PROGRAMMING QUICK START:
+
+If you cannot wait to get your hands on the glVertex frame work and
+write your own 3D graphics code, the Qt programming template in the
+"qt_template" directory is the best way to get started. The template
+"qt_template.cpp" just shows an empty window, which is waiting for you
+to fill in legacy-style OpenGL code in the marked section of the
+renderOpenGL() method. But before doing so, please run the installer
+by typing "./installer.sh" to make sure that the frame work has been
+installed properly. See also the quick start sheet ("QUICKSTART.txt").
+
+As a starting point, it is recommended to uncomment the code that is
+provided in the marked section as a legacy-style programming
+example. This is achieved by opening the "qt_template.pro" file with
+Qt Creator. Then we apply the code changes in the editor pane and hit
+the green Run button to compile and start the modified program. At
+your option you may also type "cmake . && make" to compile the example
+with CMake on the command line. Or type "qmake && make" on the command
+line to compile with QMake.
+
+For a quick overview of the programming API, see the glVertex quick
+reference sheet ("QUICKREF.txt" and "QUICKREF.pdf") and the GLSLmath
+documentation ("glslmath.txt"). Or have a look at the code examples in
+the "qt_examples" directory.
+
+More details on the Qt framework used in the programming template are
+given in the section about "Qt Convenience Classes" further below. For
+now we concentrate on creating a core profile by using another
+graphics framework: GLFW.
+
+----
+
+OPENGL CORE PROFILE EXAMPLE:
+
+The following example renders a single triangle using an OpenGL core
+profile. We are using the GLFW library to create an OpenGL 3.2 core
+profile. The example is based on the "simple.c" example of GLFW with
+the following modifications: hints for GLFW were added to create an
+according core profile and the immediate mode gl calls were replaced
+with according lgl calls.
+
+~~~~
+#include <glvertex.h>
+
+#include <GLFW/glfw3.h>
+
+int main(void)
+{
+   GLFWwindow* window;
+
+   if (!glfwInit())
+      exit(EXIT_FAILURE);
+
+   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+   window = glfwCreateWindow(640, 480, "glVertex GLFW Example", NULL, NULL);
+
+   glfwMakeContextCurrent(window);
+   glfwSwapInterval(1);
+
+   while (!glfwWindowShouldClose(window))
+   {
+      int width, height;
+
+      glfwGetFramebufferSize(window, &width, &height);
+
+      double fovy = 90;
+      double aspect = (double)width/height;
+      double nearp = 0.1;
+      double farp = 10;
+
+      // clear frame buffer
+      glViewport(0, 0, width, height);
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      glEnable(GL_DEPTH_TEST);
+      glDisble(GL_CULL_FACE);
+
+      // matrix setup
+      lglMatrixMode(LGL_PROJECTION);
+      lglLoadIdentity();
+      lglPerspective(fovy, aspect, nearp, farp);
+      lglMatrixMode(LGL_MODELVIEW);
+      lglLoadIdentity();
+      lglLookAt(0,0,1, 0,0,0, 0,1,0);
+
+      // render triangle
+      lglBegin(LGL_TRIANGLES);
+         lglColor(1,0,0);
+         lglVertex(-0.5,-0.5,0);
+         lglColor(0,1,0);
+         lglVertex(0.5,-0.5,0);
+         lglColor(0,0,1);
+         lglVertex(0,0.5,0);
+      lglEnd();
+
+      // swap frame buffer
+      glfwSwapBuffers(window);
+      glfwPollEvents();
+   }
+
+   glfwDestroyWindow(window);
+
+   glfwTerminate();
+   exit(EXIT_SUCCESS);
+}
+~~~~
+
+To compile and run the GLFW example on the command line type:
+
+> make glfw && ./glfw_example
+
+----
+
+VBO USAGE EXAMPLE:
+
+Besides simulating the fixed function pipeline, the glVertex library
+is also handy for creating VBOs in the style of the legacy interface:
+
+~~~~
+#include <glvertex.h>
+
+...
+
+// declare vbo
+lglVBO vbo;
+
+...
+
+// compile vbo
+vbo.lglBegin(LGL_TRIANGLES);
+   vbo.lglColor(1,0,0);
+   vbo.lglVertex(-0.5,-0.5,0);
+   vbo.lglColor(0,1,0);
+   vbo.lglVertex(0.5,-0.5,0);
+   vbo.lglColor(0,0,1);
+   vbo.lglVertex(0,0.5,0);
+vbo.lglEnd();
+
+...
+
+// render vbo instance at position a
+lglPushMatrix();
+lglTranslate(a);
+vbo.lglRender();
+lglPopMatrix();
+
+// render vbo instance at position b
+lglPushMatrix();
+lglTranslate(b);
+vbo.lglRender();
+lglPopMatrix();
+~~~~
+
+Using interlevead vertex arrays and the scoped matrix stack of
+glVertex, the above code can be rewritten as follows:
+
+~~~~
+// specify interleaved vertex array
+static const float array[] =
+{
+   -0.5,-0.5,0, 1,0,0,
+   0.5,-0.5,0, 0,1,0,
+   0,0.5,0, 0,0,1
+};
+
+// copy interleaved vertex array into vbo
+vbo.lglInterleavedVertexArray(LGL_TRIANGLES, array, 3, 3);
+
+{ // begin of scope
+   // render vbo instance at position a
+   lglPushMatrixScoped(); // -> push matrix
+   lglTranslate(a);
+   lglRender(vbo);
+} // end of scope -> pop matrix
+
+{ // begin of scope
+   // render vbo instance at position b
+   lglPushMatrixScoped(); // -> push matrix
+   lglTranslate(b);
+   lglRender(vbo);
+} // end of scope -> pop matrix
+~~~~
+
+The vertices are stored in the VBO with double precision by
+default. The attributes are stored with float precision. For OpenGL ES
+the precision is float for both.
+
+In order to use only float precision for the vertices, we use the
+lglVBOf class instead of lglVBO.
+
+----
+
+PRE-DEFINED VBOS:
+
+For convenience, the following geometric objects are available as
+predefined VBOs (meaning that they are derived from lglVBO as base class):
+
+* lglCube: unit cube
+* lglWireCube: unit wireframe cube
+* lglBox: rectangular box
+* lglTet: unit tetrahedron
+* lglPyramid: unit pyramid
+* lglPyramidBase: unit pyramid base
+* lglPrism: slanted unit prism
+* lglSphere: unit sphere
+* lglHemisphere: unit hemisphere
+* lglCylinder: unit cylinder
+* lglHemiCylinder: unit hemi-cylinder
+* lglDisc: unit disc
+* lglHemiDisc: unit hemi-disc
+* lglCone: unit cone
+* lglConeBase: unit cone base
+* lglRing: ring geometry
+* lglArc: arc geometry
+* lglTorus: unit torus
+* lglHemiTorus: unit hemi-torus
+* lglObj: pre-loaded geometry from an OBJ file
+* lglTeapot: the Melitta resp. Utah teapot
+* lglCoordSys: colored unit coordinate system axis cross
+* lglText: vector text
+
+The above predefined vertex buffer objects (except the predefined
+coordinate system axis cross) do not contain color attributes but
+outward facing normals and texture coordinates, so that they can be
+textured and shaded using ambient, diffuse and specular Blinn-Phong
+lighting. By default the light is a white directional light source
+positioned at the eye point. This means that the objects appear to be
+lit by a white head light.
+
+----
+
+PRE-DEFINED VBO EXAMPLE:
+
+As an example for pre-defined VBOs, the following code snippet renders
+a red shaded unit sphere at position p:
+
+~~~~
+// instantiate predefined sphere vbo
+lglSphere sphere;
+
+...
+
+{
+   // render red sphere instance at position p
+   lglPushMatrixScoped();
+   lglTranslate(p);
+   lglColor(1,0,0);
+   sphere.lglRender();
+}
+~~~~
+
+The usage of VBOs as shown above is demonstrated in the VBO
+example. To compile and run the example on the command line type:
+
+> make vbo && ./vbo_example
+
+----
+
+TRIANGLE STRIPPING EXAMPLE:
+
+In case we want to compile a couple of triangle or quad strips into a
+VBO, we need to use a trick to combine the strips into a single
+VBO. The trick employed by the glVertex library is to add degenerate
+triangles between the strips so that they form a single batch. As a
+nice side effect, this is also the fastest rendering option to my
+knowledge (depending on the particular GPU hardware, ram and drivers
+there might be faster rendering options, but this cannot be
+generalized without a-priori knowledge of the actual rendering
+setup). Here is an example:
+
+~~~~
+lglVBO vbo;
+
+vbo.lglBegin(LGL_TRIANGLE_STRIP);
+   vbo.lglVertex(0,0,0);
+   vbo.lglVertex(0,1,0);
+   vbo.lglVertex(1,0,0);
+   vbo.lglVertex(1,1,0);
+   vbo.lglVertex(2,0,0);
+   vbo.lglVertex(2,1,0);
+vbo.lglEnd();
+vbo.lglBegin(LGL_TRIANGLE_STRIP);
+   vbo.lglVertex(0,1,0);
+   vbo.lglVertex(0,2,0);
+   vbo.lglVertex(1,1,0);
+   vbo.lglVertex(1,2,0);
+   vbo.lglVertex(2,1,0);
+   vbo.lglVertex(2,2,0);
+vbo.lglEnd();
+~~~~
+
+In between the two strips, the glVertex library automatically inserts
+the two vertices
+~~~~
+   vbo.lglVertex(2,1,0);
+   vbo.lglVertex(0,1,0);
+~~~~
+so that the two strips are effectively identical to the following
+single strip:
+~~~~
+vbo.lglBegin(LGL_TRIANGLE_STRIP);
+   vbo.lglVertex(0,0,0);
+   vbo.lglVertex(0,1,0);
+   vbo.lglVertex(1,0,0);
+   vbo.lglVertex(1,1,0);
+   vbo.lglVertex(2,0,0);
+   vbo.lglVertex(2,1,0);
+   vbo.lglVertex(2,1,0);
+   vbo.lglVertex(0,1,0);
+   vbo.lglVertex(0,1,0);
+   vbo.lglVertex(0,2,0);
+   vbo.lglVertex(1,1,0);
+   vbo.lglVertex(1,2,0);
+   vbo.lglVertex(2,1,0);
+   vbo.lglVertex(2,2,0);
+vbo.lglEnd();
+~~~~
+
+In the latter case, two degenerate triangles were created
+additionally. These are detected and discarded automatically by the
+graphics hardware. As a result, the triangle strip appears to be
+restarting in the middle. Even though we are generating two more
+triangles, the single strip can be rendered faster by the GPU, because
+it does not require another render call on the CPU side to start the
+next strip explicitly.
+
+The above principle is demonstrated in the mesh example. It constructs
+a triangle mesh from multiple triangle strips. To compile and run the
+example on the command line type:
+
+> make mesh && ./mesh_example
+
+----
+
+PROGRAMMING API:
+
+In accordance with the legacy OpenGL 1.2 specification, the glVertex
+library supports the following API functions:
+* lglBegin, lglEnd
+* lglVertex, lglColor, lglNormal, lglTexCoord
+* lglMatrixMode, lglLoadIdentity, lglLoadMatrix, lglMultMatrix
+* lglScale, lglTranslate, lglRotate
+* lglOrtho, lglFrustum, lglPerspective, lglLookAt
+* lglPushMatrix, lglPopMatrix
+* lglViewport
+* lglClearColor, lglClear
+* lglLight
+* lglClipPlane
+* lglFog
+* lglLineWidth
+* lglPolygonMode
+* lglGetError
+
+Additionally, it supports the following extended convenience functions:
+* lglGetGLVersion, lglGetGLSLVersion
+* lglGetRenderer, lglGetVendor, lglGetVendorName
+* lglGetColor
+* lglAttribute
+* lglVertexArray, lglInterleavedVertexArray
+* lglGetMatrixMode, lglGetMatrix
+* lglGetProjectionMatrix, lglGetModelViewMatrix, lglGetTextureMatrix
+* lglGetInverseModelViewMatrix, lglGetInverseTransposeModelViewMatrix
+* lglGetModelViewProjectionMatrix
+* lglRotateX, lglRotateY, lglRotateZ
+* lglParallel
+* lglProjection, lglModelView, lglView, lglTexture
+* lglManip, lglResetManip, lglIsManipApplied
+* lglGetManip, lglGetInverseTransposeManip
+* lglModel, lglGetModelMatrix, lglGetInverseTransposeModelMatrix
+* lglTex, lglGetTexMatrix
+* lglReadFile, lglReadTextFile
+* lglReadPnmImage, lglWritePnmImage
+* lglReadRawImage, lglWriteRawImage
+* lglSupportsGLSL, lglGetGLSLVersionString
+* lglCompileGLSLVertexShader, lglCompileGLSLFragmentShader, lglDeleteShader
+* lglCombineGLSLProgram, lglSplitGLSLProgram
+* lglCompileGLSLProgram, lglLinkGLSLProgram, lglDeleteGLSLProgram
+* lglLoadGLSLProgram, lglPlainGLSLProgram
+* lglUseProgram, lglReuseProgram, lglUseDefaultProgram
+* lglGetProgram, lglGetActiveProgram
+* lglUniform, lglUniformi, lglUniformf, lglUniformfv
+* lglSampler, lglSampler2D, lglSampler3D
+* lglLightDirection, lglLightPosition
+* lglLightVector, lglGetLightVector
+* lglLightParameters, lglGetLightParameters
+* lglLightSourceParameters, lglGetLightSourceParameters
+* lglMaterialParameters, lglGetMaterialParameters
+* lglTexture2D, lglGetTexture2D
+* lglTexture3D, lglGetTexture3D
+* lglCreateTexmap2D, lglCreateMipmap2D
+* lglCreateTexmap3D, lglCreateNoiseTexmap3D
+* lglDeleteTexmap
+* lglTexCoordGen, lglGetTexCoordGen
+* lglTexMagFilter2D, lglTexWrap2D, lglTexFilterAnisotropic2D
+* lglTexMagFilter3D, lglTexWrap3D, lglTexFilterAnisotropic3D
+* lglLoadTexture, lglLoadQtTexture
+* lglLoadObj, lglSaveObj
+* lglColoring, lglLighting, lglTexturing
+* lglGetColoring, lglGetLighting, lglGetTexturing
+* lglCloneUniforms, lglCopyUniforms
+* lglCloneProgram, lglCopyProgram
+* lglCloneState
+* lglInitializeOpenGL
+* lglRGBAWrite, lglGetRGBAWrite
+* lglZWrite, lglGetZWrite
+* lglDepthTest, lglGetDepthTest
+* lglBackFaceCulling, lglGetBackFaceCulling
+* lglBlendMode, lglGetBlending, lglGetBlendMode
+* lglAlphaTest, lglGetAlphaTest, lglGetAlphaTestValue
+* lglGetAlphaTestGreater, lglGetAlphaTestEqual
+* lglGetClipPlane, lglGetClipPlaneEquation
+* lglGetFog, lglGetFogDensity, lglGetFogColor
+* lglGetLineWidth
+* lglTogglePolygonMode, lglGetPolygonMode
+* lglInterlacingMode, lglComplementaryInterlacingMode, lglGetInterlacingMode
+* lglReadRGBPixels
+* lglBeginRayCast, lglRayCast, lglEndRayCast, lglGetRayCastDistance
+* lglEnableViewCulling, lglDisableViewCulling
+* lglRandom, lglSeed
+* lglWarning, lglError, lglFatal
+* lglVerbosity
+
+Additionally, the VBO classes support the following methods:
+* lglGetVertexMode, lglGetVertexCount
+* lglGetBoundingBox, lglGetCenter, lglGetExtent
+* lglGetBoundingSphere, lglGetRadius, lglGetNorm
+* lglGetMaxExtent, lglGetMaxAbsCoord
+* lglRender
+
+The following VBO classes are provided:
+* lglVBO (base class)
+* lglVBOf (uses float instead of double for storing vertices)
+* lglSharedVBO (multiple shared instances with transformation matrices)
+* lglCube, lglWireCube, lglBox, lglTet, lglPyramid, lglPyramidBase, lglPrism
+* lglSphere, lglHemisphere, lglCylinder, lglHemiCylinder
+* lglDisc, lglHemiDisc, lglCone, lglConeBase, lglRing, lglArc
+* lglTorus, lglHemiTorus
+* lglSheet, lglSheetBezier, lglSheetDisc
+* lglShim, lglSpiral, lglGear
+* lglFunctional, lglRotational, lglRotationalBezier
+* lglCylindrical, lglSpherical, lglToroidal
+* lglExtrusion, lglExtrusionBezier, lglReplicatedGeometry
+* lglPlanar, lglPlanarBezier
+* lglObj, lglTeapot
+* lglCoordSys
+* lglText
+
+Note: The lglLoadObj method and the lglObj and lglTeapot classes load
+OBJ data from /usr/local/share, if no data is present in the current
+working directory.
+
+----
+
+DETAILED API DESCRIPTION:
+
+The basic behavior of the glVertex API is closely related to the
+immediate mode and the fixed function pipeline of legacy OpenGL:
+
+* All legacy OpenGL modeling transformations like glTranslate(),
+  glRotate() and glScale() work as usual (except for using the "lgl"
+  instead of the "gl" prefix).
+
+* The same holds for matrix mode operations via lglMatrixMode() and
+  the matrix stack via lglPushMatrix() and lglPopMatrix(). For the
+  latter operations the matrix mode can be LGL_PROJECTION,
+  LGL_MODELVIEW or LGL_TEXTURE.
+
+* Projection and viewing matrices can be calculated using the
+  lglPerspective(), lglOrtho(), lglFrustum() and lglLookAt()
+  methods. This corresponds to the former GL and GLU utility methods
+  gluPerspective(), glOrtho(), gluOrtho2D, glFrustum and gluLookAt().
+
+* For the calculation of the above 4x4 matrices the glVertex library
+  is utilizing the GLSLmath C++ header-only math library, which is
+  part of the distribution.
+
+* For convenience, the library extends the above API with the
+  lglProjection(), lglModelView(), lglView() and lglModel()
+  methods. These simplify the setup of the model-view and projection
+  matrices, since they do not require an explicit change of the matrix
+  mode.
+
+* Matrix operations between lglBegin() and lglEnd() are not allowed.
+
+* Vertices are specified with lglVertex() after starting a sequence
+  with lglBegin(). The specified vertices are gathered in a VBO, which
+  is rendered on lglEnd(). Supported graphics primitives are:
+
+  * LGL_LINES, LGL_LINE_STRIP
+  * LGL_TRIANGLES, LGL_TRIANGLE_STRIP, LGL_TRIANGLE_FAN
+  * LGL_QUADS, LGL_QUAD_STRIP
+
+  Note: In principle, LGL_LINES, LGL_TRIANGLES and LGL_QUADS are the
+  slowest rendering path. Whenever possible, stripped geometry should
+  be used instead.
+
+* If the vertices are gathered in an C++ object of type "lglVBO", they
+  are not rendered immediately on lglEnd() but on an explicit
+  lglRender() call. This enables multiple render calls on the same
+  pre-compiled VBO. The center of the vertices' bounding box is
+  available via lglGetCenter() and the extent of the bounding box is
+  available via lglGetExtent().
+
+* In the above case, multiple lglBegin() / lglEnd() sections are
+  allowed, if the primitive types are matching. If the primitive type
+  is LGL_TRIANGLE_STRIP or LGL_QUAD_STRIP, then the strip sections are
+  concatenated to form a single strip by adding degenerate triangles
+  between the strip sections. This is the fastest available rendering
+  option, since it allows to maximize the number of triangles sent to
+  the graphics pipeline in a single batch.
+
+* In the above case, it is allowed to perform matrix operations
+  between lglBegin() and lglEnd(), if the matrix mode is set to
+  LGL_PREMODEL. In that case, all vertices are immediately
+  pre-multiplied with the top matrix of the pre-model matrix stack.
+
+* In the above case, the "lglSharedVBO" container class allows to
+  organize multiple instances of the same shared VBO so that it is
+  rendered at different locations. Each matrix appended to the
+  container via push_back yields another shared VBO object.
+
+* Vertex attributes are specified via lglColor(), lglNormal() and
+  lglTexCoord() before lglVertex().
+
+* Attributes specified outside of lglBegin() and lglEnd() do not take
+  effect, except for colors. If colors are specified outside of
+  lglBegin() and lglEnd() those colors modulate the colors specified
+  in between. The default vertex color is white. The effect of
+  coloring can be disabled with lglColoring(false).
+
+* The wireframe silhouette of each rendered triangle can be displayed
+  by setting the polygon mode to LGL_LINE via lglPolygonMode().
+
+* With lglManip() a simple track ball can be implemented. By mapping
+  mouse deltas to rotating angles and passing them to lglManip(), the
+  scene will be displayed rotated about an anchor point in viewing
+  coordinates. By default the scene rotates around the lookat point as
+  specified by lglLookAt() or lglView(). The corresponding rotation
+  matrix is available via lglGetManip()
+  resp. lglGetInverseTransposeManip(), if provided by the windowing
+  subsystem (e.g. Qt).
+
+* The specification of per-vertex colors (with lglColor) automatically
+  triggers the setup of a default GLSL shader, which interpolates the
+  colors during rasterization. Further lighting or texturing
+  operations modulate that color.
+
+* The specification of per-vertex normals (with lglNormal)
+  automatically triggers the setup of a default GLSL shader, which
+  performs Blinn-Phong shading. The latter can be configured with the
+  lglLight() method, which takes the usual Blinn-Phong lighting terms
+  as parameters for a single directional or positional light
+  source. If the light source is not defined to be a camera light, the
+  light vector is multiplied with the inverse transpose of the actual
+  model-view matrix. To define the light vector in world coordinates,
+  the model-view matrix must therefore contain the viewing matrix. The
+  default setting is a white directional light source positioned at
+  the origin of the camera coordinate system, which modulates the
+  vertex colors. The effect of lighting can be disabled with
+  lglLighting(false).
+
+* The specification of per-vertex texture coordinates (with
+  lglTexCoord) automatically triggers legacy 2D resp. 3D texturing
+  using a corresponding default GLSL shader. This requires the
+  specification of a texture object via lglTexture2D() or
+  lglTexture3D(). Texture objects can be created either as plain
+  texture map via lglCreateTexmap2D() or as mip-mapped texture via
+  lglCreateMipmap2D(). Volumetric textures are created with
+  lglCreateTexmap3D(). Texture coordinates are multiplied with the top
+  matrix of the texture matrix stack. For convenience, we can specify
+  the texture matrix via lglTex() without explicitly setting the
+  matrix mode to LGL_TEXTURE. The texture color is always modulating
+  the vertex color. The effect of texturing can be disabled with
+  lglTexturing(false).
+
+* If texture coordinate generation is turned on via lglTexCoordGen(),
+  then vertex positions are automatically interpreted as texture
+  coordinates, meaning that texture coordinates are identical to
+  object space coordinates. This is helpful for procedural
+  texturing. For this use case a 3D Perlin noise texture can be
+  created with lglCreateNoiseTexmap3D().
+
+* Clip planes are specified identically to the legacy OpenGL 1.2
+  specification by passing the coefficients a, b, c and d of the clip
+  plane equation ax+by+cz+d=0 to lglClipPlane(a, b, c, d, n), where n
+  is the number of the clip plane to be used. Up to 8 clip planes are
+  supported by default.
+
+* Fog parameters can be specified with lglFog(d, c). The first
+  parameter d controls the density of the fog, whereas the second
+  parameter c defines the fog color. If the density is zero, fog is
+  disabled. The fog factor f being used for blending with the fog
+  color is:
+
+  * z = 1/gl_FragCoord.w
+  * f = 1-exp(-density*z*z)
+
+* The state of the OpenGL rasterization can be controlled with the
+  following convenience functions: lglDepthDest(),
+  lglBackFaceCulling(), lglBlendMode(), lglAlphaTest(), lglRGBAWrite,
+  lglZWrite and lglLineWidth().
+
+* To specify a custom GLSL shader, we compile or load a shader via
+  lglCompileGLSLProgram() resp. lglLoadGLSLProgram() and pass the
+  corresponding GLSL program id to lglUseProgram(). Generic vertex
+  attributes to be used by the custom shader are specified with
+  lglAttribute() within lglBegin() / lglEnd() sections. Uniform shader
+  variables are set with lglUniform*(). The usage of the custom shader
+  and uniforms is limited to the VBO on which the shader and uniforms
+  have been set locally. Uniforms can be copied from one VBO to
+  another by calling lglCopyUniforms(). To render a VBO with a custom
+  program and a local set of uniforms, call vbo.lglUseProgram(),
+  vbo.lglUniform() and vbo.lglRender() on the VBO object "vbo". To
+  render a set of VBOs with a consistent program and set of uniforms,
+  call lglUseProgram(), lglUniform() and lglRender(vbo) globally. To
+  disable a custom shader, call lglUseDefaultProgram(). The disposal
+  of unused custom shaders needs to be handled explicitly via
+  lglDeleteGLSLProgram().
+
+* To replace the internal default shader, which is used if no custom
+  shader is specified, we pass a compiled program id to
+  lglReplaceDefaultProgram(id, colors, normals, texcoords), where the
+  latter three parameters determine whether or not the shader is
+  taylored for receiving color, normal or texture coordinate
+  attributes as attached to the actually rendered vertices. The
+  replaced shader will be active for all VBOs, which have no custom
+  shader and match the specified set of vertex attributes. A
+  replacement shader can be specified for each different set of
+  attributes (meaning a total of 8 auto-selected replacement
+  shaders). It is recommended to use VBOs with normals but no color or
+  texture coordinate attributes by default and specify a replacement
+  shader for this default attribute set via
+  lglReplaceDefaultProgram(id).
+
+For more information about GLSL shaders see the following examples:
+
+----
+
+GLSL SHADER EXAMPLE:
+
+If both color and normal attributes are supplied along each vertex,
+the glVertex library uses the following default GLSL shader (which has
+been simplified to make it better readable), which performs
+single-sided Blinn-Phong shading for either a directional or a
+positional light source:
+
+Default Vertex Shader:
+
+~~~~
+#version 120
+attribute vec4 vertex_position;
+attribute vec4 vertex_color;
+attribute vec3 vertex_normal;
+uniform mat4 mv;
+uniform mat4 mvp;
+uniform mat4 mvit;
+uniform vec4 light;
+varying vec4 frag_color;
+varying vec3 frag_normal;
+varying vec3 frag_halfway;
+varying vec3 frag_lightvec;
+vec3 flightvec(vec4 mv_pos) {return((light.w==0.0f)? vec3(light) : vec3(light - mv_pos));}
+vec3 flightdir(vec4 mv_pos) {return((light.w==0.0f)? vec3(light) : normalize(vec3(light - mv_pos)));}
+vec4 fvertex() {return(mvp * vertex_position);}
+vec3 fnormal() {return(normalize(mat3(mvit) * vertex_normal));}
+vec3 fhalfway(vec4 mv_pos) {return(normalize(flightdir(mv_pos) - normalize(vec3(mv_pos))));}
+void main()
+{
+   vec4 mv_pos = mv * vertex_position;
+   frag_color = vertex_color;
+   frag_normal = fnormal();
+   frag_halfway = fhalfway(mv_pos);
+   frag_lightvec = flightvec(mv_pos);
+   gl_Position = fvertex();
+}
+~~~~
+
+Default Fragment Shader:
+
+~~~~
+#version 120
+uniform vec3 kaIa,kdId,ksIs;
+uniform float exponent;
+uniform vec3 falloff;
+varying vec4 frag_color;
+varying vec3 frag_normal;
+varying vec3 frag_halfway;
+varying vec3 frag_lightvec;
+vec4 flighting(vec4 color)
+{
+   vec3 n = normalize(frag_normal);
+   vec3 h = normalize(frag_halfway);
+   vec3 l = normalize(frag_lightvec);
+   float d = length(frag_lightvec);
+   float diffuse = dot(l, n);
+   float specular = dot(h, n);
+   float attenuation = 1.0f / (falloff.x + falloff.y*d + falloff.z*d*d);
+   diffuse = (diffuse < 0.0f)? 0.0f : diffuse;
+   specular = pow((specular < 0.0f)? 0.0f : specular, exponent);
+   attenuation = (attenuation > 1.0f)? 1.0f : attenuation;
+   return(vec4(vec3(color) * (kaIa + kdId * diffuse * attenuation) + ksIs * specular * attenuation, color.a));
+}
+void main()
+{
+   gl_FragColor = flighting(frag_color);
+}
+~~~~
+
+If the polygon mode is set to LGL_LINE with lglPolygonMode(), the
+above shaders are replaced with a single-pass GLSL shader that
+calculates the wire frame silhouette of each triangle by using
+barycentric coordinates.
+
+The default shader can be overridden by setting a custom GLSL shader
+via lglUseProgram(). Then the GLSL program must comply to the
+following rules:
+
+* Vertices are passed in the attribute "vertex_position" (vec4).
+* Colors are passed in the attribute "vertex_color" (vec4).
+* Normals are passed in the attribute "vertex_normal" (vec3).
+* Texture coordinates are passed in the attribute "vertex_texcoord" (vec4).
+* Generic vertex attributes are passed in "vertex_attribute0",
+  "vertex_attribute1", "vertex_attribute2", ...
+* The vertex shader may use the model-view-projection matrix "mvp" and
+  transform the vertices with that matrix (uniform mat4 mvp).
+* If no color attributes were specified between lglBegin() and
+  lglEnd(), the fragment shader may use the actual color instead
+  (uniform vec4 color).
+* If normals were specified, the vertex shader may use the model-view
+  matrix "mv" resp. the inverse transpose model-view matrix "mvit" to
+  transform the vertex normals (uniform mat4).
+* If texture coordinates were specified, the vertex shader may use the
+  uniform texture matrix "tm" and transform texture coordinates with
+  that matrix (uniform mat4).
+* The vertex shader is required to write "gl_Position" (vec4).
+* The fragment shader is required to write "gl_FragColor" (vec4).
+
+To setup a custom shader, we can load the GLSL source like so:
+
+~~~~
+const char vertex_shader_file[] = "vertex_shader.frg";
+const char fragment_shader_file[] = "fragment_shader.vtx";
+...
+GLuint program = lglLoadGLSLProgram(vertex_shader_file, fragment_shader_file);
+lglUseProgram(program);
+...
+lglDeleteGLSLProgram(program);
+~~~~
+
+If the shader sources are available as a single shader file with the
+extension ".glsl", where the vertex and fragment shaders have been
+concatenated with the separator "---", we can load the combined shader
+as follows:
+
+~~~~
+const char shader_file[] = "shader.glsl";
+GLuint program = lglLoadGLSLProgram(shader_file);
+~~~~
+
+If the combined shader program source is defined inline as a C-string,
+we can compile the shader as follows:
+
+~~~~
+const char shader[] = "#version 120\n ...";
+...
+GLuint program = lglCompileGLSLProgram(shader);
+~~~~
+
+The shortest possible combined shader program is the following:
+
+~~~~
+#version 120
+attribute vec4 vertex_position;
+uniform mat4 mvp;
+void main()
+{
+   gl_Position = mvp * vertex_position;
+}
+---
+#version 120
+uniform vec4 color;
+void main()
+{
+   gl_FragColor = color;
+}
+~~~~
+
+The above shader program is called the "plain shader". Compiling and
+activating this shader is equivalent to:
+
+~~~~
+GLuint program = lglCompileGLSLProgram(lglPlainGLSLProgram());
+...
+lglUseProgram(program);
+...
+lglDeleteGLSLProgram(program);
+~~~~
+
+If a shader contains uniform variables (besides the mandatory mv, mvp
+and mvit uniforms) we can set those uniforms via lglUniform*() for the
+currently active GLSL program. The uniforms need to be specified after
+lglUseProgram():
+
+~~~~
+lglUseProgram(program);
+...
+lglUniform[i/f/fv]("name", value);
+~~~~
+
+Suffix i is for integer, f for float and fv for float arrays (vectors
+and matrices).
+
+Each of the lglUniform*() functions returns an index, which can be
+used to set frequently changing uniform values directly:
+
+~~~~
+unsigned int index = lglUniform("uniform");
+lglUniform*(index, ...);
+~~~~
+
+Uniform samplers can be set with lglSampler2D/3D(), which is just a
+convenience wrapper around lglUniformi() and lglTexture2D/3D().
+
+When a different program id is passed to lglUseProgram(id), the list
+of uniforms previously registered with lglUniform*() is cleared. If it
+is necessary to keep the current list of uniforms, we may pass false
+as second parameter: lglUseProgram(id, false).
+
+----
+
+GLSL SHADER EXAMPLE /W FOGGING:
+
+In this example we use Qt to create an OpenGL core profile and a
+custom GLSL shader that implements simple exponential fogging:
+
+~~~~
+static const char vertex_shader[] =
+   "#version 120\n"
+   "attribute vec4 vertex_position;\n"
+   "attribute vec4 vertex_color;\n"
+   "uniform mat4 mvp;\n"
+   "varying vec4 frag_color;\n"
+   "vec4 fvertex() {return(mvp * vertex_position);}\n"
+   "void main()\n"
+   "{\n"
+   "   frag_color = vertex_color;\n"
+   "   gl_Position = fvertex();\n"
+   "}\n";
+
+static const char fragment_shader[] =
+   "#version 120\n"
+   "uniform float density;\n"
+   "varying vec4 frag_color;\n"
+   "void main()\n"
+   "{\n"
+   "   float z = 1.0f/gl_FragCoord.w;\n"
+   "   float f = 1.0f-exp(-density*z*z);\n"
+   "   gl_FragColor = (1.0f-f)*frag_color + f*vec4(1);\n"
+   "}\n";
+
+lglVBO vbo;
+GLuint program = vbo.lglCompileGLSLProgram(vertex_shader, fragment_shader);
+vbo.lglUseProgram(program);
+vbo.lglUniformf("density", 0.1f);
+~~~~
+
+Remark: The above shader is equivalent to using lglFog(density).
+
+To compile and run the Qt example, type the following command line:
+
+> make qt && ./qt_example
+
+----
+
+OBJ FORMAT EXAMPLE:
+
+The glVertex library supports the OBJ file format (as outlined in the
+Alias Wavefront OBJ file format section). In the following example we
+load the famous Utah teapot, which is actually a German Melitta
+teapot, into a VBO:
+
+~~~~
+#include <glvertex_objformat.h>
+
+...
+
+lglVBO *vbo = lglLoadObj("teapot.obj");
+if (vbo == NULL) lglFatal("file not found");
+
+...
+
+{
+   lglPushMatrixScoped();
+   lglScale(0.005);
+   vbo->lglRender();
+}
+~~~~
+
+For more details, see the full source code of the Qt example in
+"examples/qt_example.cpp". The Qt example shows how to load multiple
+obj files via lglLoadObj(). It also features a track ball. The track
+ball is inherited from the "lgl_Qt_GLUI" window class, which opens a
+Qt window with an OpenGL core profile context and uses lglManip() to
+manipulate the orientation of the rendered scene depending on the
+mouse events observed.
+
+----
+
+SHARED VBO EXAMPLE:
+
+In case we want to render a particular geometric object multiple
+times, we can create a single VBO for the object and use lglModel() to
+render the object at different locations. With the "lglSharedVBO"
+container class, we can simplify the calculation of the modeling
+matrices that need to be passed to lglModel() by using the pre-model
+matrix stack:
+
+~~~~
+lglVBO *vbo = lglLoadObj("teapot.obj");
+lglSharedVBO vbos(vbo);
+
+lglMatrixMode(LGL_PREMODEL);
+for (unsigned int i=-10; i<=10; i++)
+{
+   lglPushMatrix();
+      lglTranslate(i,0,0);
+      if (i%2) lglRotate(90, 0,1,0);
+      vbos.push_back();
+   lglPopMatrix();
+}
+lglMatrixMode(LGL_MODELVIEW);
+
+...
+
+vbos.lglRender();
+~~~~
+
+For more details, see the full source code of the Qt pythagorean
+example in "qt_examples/qt_pythtree.cpp". This example shows how to
+create a VBO for a pythagorean tree and then renders an entire forest
+of those trees. It also demonstrates how to use Perlin noise for
+procedural texturing purposes. Hit the return key to see a single tree
+or the entire forest. To compile it on the command line type:
+
+> (cd qt_examples; qmake qt_pythtree.pro && make)
+
+----
+
+REPLACEMENT SHADERS:
+
+In case we want to render multiple objects with a custom shader, that
+is consistent for all objects, we replace the default internal shader
+by a custom one:
+
+~~~~
+GLuint id = lglCompileGLSLProgram(custom_program);
+lglReplaceDefaultProgram(id);
+lglUniform("custom_uniform", custom_value);
+lglRender(vbo1);
+lglRender(vbo2);
+lglRender(vbo3);
+...
+lglDeleteGLSLProgram(id);
+~~~~
+
+Note that the internal shader is chosen depending on the set of
+attributes available in the VBO. The default attribute set includes
+normals but no color or texture coordinate attributes. As a
+consequence, the above custom shader only applies to VBOs with a
+respective attribute set. To replace a shader for a different
+attribute set, add respective boolean parameters to
+lglReplaceDefaultProgram:
+
+~~~~
+bool colors = ...;
+bool normals = ...;
+bool texcoords = ...;
+lglReplaceDefaultProgram(id, colors, normals, texcoords);
+~~~~
+
+----
+
+LIGHT SOURCES AND MATERIALS:
+
+In order to allow a more convenient specification of the lighting
+parameters, we first define and enable a light source and then define
+and enable a material, which together affect the actual Blinn-Phong
+lighting setup:
+
+~~~~
+static lgl_LightSource light;
+light.begin();
+static lgl_Material material;
+material.begin();
+lglRender(...);
+material.end();
+light.end();
+~~~~
+
+The currently active light source is used to determine the light
+vector (via setDirection resp. setPosition) and intensity (via
+setAmbientColor, setDiffuseColor, setSpecularColor), e.g. for a
+directional camera light source:
+
+~~~~
+light.setDirection(vec3f(0,0,1));
+light.setAmbientColor(vec3f(1));
+light.setDiffuseColor(vec3f(1));
+light.setSpecularColor(vec3f(1));
+~~~~
+
+A positional light source also supports constant, linear and quadratic
+attenuation coefficients (via setIntensityAttenuation), e.g. for a
+positional camera light source:
+
+~~~~
+light.setPosition(vec3f(0,0,0));
+light.setAmbientColor(vec3f(1));
+light.setDiffuseColor(vec3f(1));
+light.setSpecularColor(vec3f(1));
+light.setIntensityAttenuation(vec3f(0,0,0.001f));
+~~~~
+
+The currently active material is used to determine the material
+reflection (via setAmbientColor, setDiffuseColor, setSpecularColor,
+setSpecularExponent), e.g:
+
+~~~~
+material.setAmbientColor(vec3f(0.1f));
+material.setDiffuseColor(vec3f(0.7f));
+material.setSpecularColor(vec3f(0.2f));
+material.setSpecularExponent(30);
+~~~~
+
+----
+
+LGL SCENE GRAPH:
+
+The glVertex package contains a scene graph module that is easy to
+understand and use for OpenGL beginners. It is intended to be used for
+the construction of complex graphical objects from a set of primitive
+shapes with unit size. For this purpose it contains a base node class
+(lgl_Node) and four main scene graph node types derived from the base
+class:
+
+* lgl_GeometryNode: encapsulates geometry by means of a VBO
+  * the VBO is given as a reference to a lglVBO object
+* lgl_ContainerNode: encapsulates geometry by means of a VBO
+  * the VBO is owned by the node
+* lgl_TransformationNode: encapsulates transformations like
+  * translation, rotation and scaling
+* lgl_CameraNode: encapsulates the camera transformation
+  * accounts for both the projection and the view transformation
+
+The hierarchical construction of a scene is accomplished by adding
+child nodes to their parents via the add() method. A geometry node is
+usually a leave node of the scene graph and all the transformations
+from the root of the scene graph to the geometry node are applied to
+it in descending order.
+
+Added nodes are reference counted, so that they do not need to be
+released explicitly. They are released automatically, when the last
+referencing node is released.
+
+The add() method allows chaining, so that the addition of a geometry
+node and its transformations can be written as a single command. See
+the following example:
+
+~~~~
+#include <glvertex_nodes.h>
+
+...
+
+// vbo
+lglCube *cube = new lglCube();
+
+// camera
+lgl_CameraNode *cam = new lgl_CameraNode();
+cam->setPerspective(fovy, aspect, nearp, farp);
+cam->setEye(vec3(0,0,0), vec3(0,0,-1), vec3(0,1,0));
+root = new lgl_Node();
+root->add(cam_);
+
+// scene
+root->add(new lgl_TranslationNode(vec3(0,0,-10)))->
+      add(new lgl_RotationAnimationNode(10, vec3(0,1,0))->
+      add(new lgl_ScaleNode(vec3(3,1,1))->
+      add(new lgl_GeometryNode(cube));
+
+root->renderSceneGraph();
+~~~~
+
+List of available node types:
+
+* camera node (lgl_CameraNode)
+* geometry node (lgl_GeometryNode, lgl_ContainerNode)
+* VBO node (lgl_VBONode)
+* color node (lgl_ColorNode)
+* transformation node (lgl_TransformationNode)
+ * translation node (lgl_TranslationNode)
+ * rotation node (lgl_RotationNode)
+ * scale node (lgl_ScaleNode)
+* texture transformation node (lgl_TextureTransformationNode)
+* animation node (lgl_AnimationNode)
+ * translation animation node (lgl_TranslationAnimationNode)
+ * rotation animation node (lgl_RotationAnimationNode)
+* transition node (lgl_TransitionNode)
+ * translation transition node (lgl_TranslationTransitionNode)
+ * rotation transition node (lgl_RotationTransitionNode)
+ * scale transition node (lgl_ScaleTransitionNode)
+* warp animation node (lgl_WarpAnimationNode)
+* light node (lgl_LightNode)
+* 2D texture node (lgl_Texture2DNode)
+* 3D texture node (lgl_Texture3DNode)
+* state change node (lgl_StateNode)
+ * depth write node (lgl_DepthWriteNode)
+ * depth test node (lgl_DepthTestNode)
+ * back-face culling node (lgl_BackFaceCullingNode)
+ * blending node (lgl_BlendingNode)
+ * alpha test node (lgl_AlphaTestNode)
+ * fog node (lgl_FogNode)
+ * line width node (lgl_LineWidthNode)
+ * coloring node (lgl_ColoringNode)
+ * lighting node (lgl_LightingNode)
+ * texturing node (lgl_TexturingNode)
+* clipping node (lgl_ClippingNode)
+* switcher node (lgl_SwitcherNode)
+* level-of-detail node (lgl_LevelOfDetailNode)
+* subgraph node (lgl_SubgraphNode)
+* control node (lgl_ControlNode, lgl_SteerNode)
+* action node (lgl_ActionNode)
+
+The scene graph typically is created in the initializeOpenGL() method
+and rendered in the renderOpenGL() method of the Qt convenience class
+lgl_Qt_GLUI.
+
+Since the scene graph is aiming at the hierarchical construction of
+complex objects from unit shapes and not for handling an entire scene
+universe in the sense of a fully fledged game engine, it intentionally
+lacks the following features to keep the scene graph simple:
+
+* state sorting
+* bounding box culling
+* multi-pass rendering
+* support for transparency by depth sorting
+* advanced lighting and texturing techniques
+* physical simulation and collision detection
+* scene format loaders
+* picking and selection
+* etc.
+
+Nevertheless, a subset of the above features is provided by the
+following means:
+
+* The bounding box of the entire scene graph or any subgraph can be
+  determined by calling getBoundingBox() on the respective root or
+  sub-node. This method is not optimized. Calling getBoundingBox() on
+  a lgl_GeometryNode, lgl_ContainerNode or VBO is efficient, though.
+
+* View culling can be enabled for subsequent VBO rendering calls via
+  lglEnableViewCulling(), which culls the bounding box of each VBO
+  against the current view. Culling is turned off by
+  lglDisableViewCulling(). It is off by default.
+
+* Multi-pass rendering is provided via the lgl_SceneGraphScene class
+  (see below).
+
+* Picking is provided by the scene graph via pickSceneGraph() with a
+  picking ray defined in eye coordinates (see below). This method is
+  not optimized.
+
+* Transparency and selection is handled by the
+  lgl_GraphicalObjectScene class (see below).
+
+* Physical simulation is provided by the lgl_PhysicalObjects base
+  class. As a default implementation the Bullet library is wrapped in
+  the lgl_BulletObjects class (see below). Efficient picking is
+  provided via Bullet's collision system by calling
+  lgl_BulletObjects::rayTest on the scene.
+
+* Regarding scene graph optimizations, the following simple case is
+  supported: if multiple transformation nodes represent a node chain,
+  then the entire chain of transformations is merged into a single
+  transformation node containing the combined transformations. To
+  start the optimization, we call the optimizeAll() method on the root
+  node (see tutorial example "D01b_clockwork.cpp".
+
+For more details please check the following sections and the Doxygen
+documentation.
+
+----
+
+MULTI-PASS RENDERING:
+
+Multi-pass rendering is achieved by encapsulating a scene in an
+instance of a lgl_Scene class and passing this scene to an instance of
+a lgl_Renderer class.
+
+The scene class lgl_Scene
+* is an abstraction of a graphical scene
+* provides a pure virtual renderScene() method for rendering the scene
+* provides additional hooks for multi-pass rendering
+
+The scene class lgl_SceneGraphScene (derived from lgl_Scene)
+* is an abstraction of a graphical scene with a scene graph
+* provides multi-pass shadow plane rendering via setShadowPlane()
+* provides picking of objects stored as geometry nodes in the scene graph
+* provides view culling (enabled by default)
+
+The multi-pass renderer lgl_Renderer
+* is designed as an abstraction layer for multi-pass rendering
+* renders the referenced scene object multiple times
+* requires the scene object to provide hooks to setup the rendering state
+* calls the according hooks for each pass before and after the actual render call
+* provides multi-pass interlaced stereo rendering via setStereoMode()
+
+The multi-pass scene graph renderer lgl_SceneGraphRenderer (derived from lgl_Renderer)
+* is designed as a convenience wrapper for multi-pass scene graph rendering
+
+The lgl_Scene_GLUI class is a Qt convenience class based on the above
+multi-pass renderers that provides initialization and rendering hooks
+just like lgl_Qt_GLUI.
+
+If the scene supports interlaced stereo rendering, the lgl_Scene_GLUI
+convenience class understands the following command line options:
+* --stereo -> enable interlaced stereo rendering
+* --stereo=left -> enable horizontal left stereo interlacing mode
+* --stereo=right -> enable horizontal right stereo interlacing mode
+* --stereo=top -> enable vertical top stereo interlacing mode
+* --stereo=bottom -> enable vertical top stereo interlacing mode
+* --stereobase=... -> specify distance of eye points in stereo mode
+
+Please check the tutorial section for examples.
+
+----
+
+STEREO RENDERING:
+
+Stereo rendering is an example for multi-pass rendering. For the
+particular case of interlaced stereo, the LCD monitor commonly has
+alternating scan lines with different polarization. With glasses that
+show one polarization mode on the left and the other polarization mode
+on the right, two different stereo images can be provided in a single
+image. In such a setup the vertical resolution is halved.
+
+In order to generate a stereoscopic view of a particular scene, we
+need to render the scene two times. One time with one set of the scan
+lines disabled, and another time with the other set of complementary
+scan lines disabled. The eye point must match the position of the left
+resp. right eye. The distance of both is called the stereo base.
+
+With the multi-pass rendering module of glVertex this can be achieved
+easily by specifying the stereo base and the interlacing mode. Then
+the given scene is rendered automatically two times with proper scan
+line suppression and eye point displacement. For that we need to
+supply a camera object (lg_lCam) and the interlacing mode
+(lgl_interlacing_enum). The stereo base is a parameter on the camera
+(setStereoBase). The lines of sight of both eyes meet at the lookat
+point. The scene to be rendered is derived from the abstract lgl_Scene
+class by implementing the renderScene() method:
+
+~~~~
+lgl_Cam cam;
+cam.setPerspective(fovy, aspect, nearp, farp);
+cam.setEye(eye, lookat, up);
+cam.setStereoBase(base);
+
+class Scene: public lgl_Scene
+{
+public: void renderScene() {...}
+} scene;
+
+lgl_Renderer renderer;
+renderer.setScene(&scene);
+renderer.setStereoMode(&cam, LGL_INTERLACE_VERTICAL_TOP);
+~~~~
+
+Depending on the layout of the LCD's interlaced scan lines, the stereo
+mode (as given for the left eye) can be:
+
+* columns are numbered from left to right starting with 1
+* lines are numbered from top to bottom starting with 1
+* mode LGL_INTERLACE_HORIZONTAL_LEFT: odd vertical lines
+* mode LGL_INTERLACE_HORIZONTAL_RIGHT: even vertical lines
+* mode LGL_INTERLACE_VERTICAL_TOP: odd horizontal lines
+* mode LGL_INTERLACE_VERTICAL_BOTTOM: even horizontal lines
+
+For more details see the tutorial example
+"A08b_interlaced_stereo.cpp".
+
+----
+
+FBO RENDERING:
+
+Frame buffer objects (FBOs) are often used for multi-pass
+rendering. It is a common task to render a frame into a FBO in a first
+pass and to reuse the generated image as a texture in a second
+pass. The glVertex framework makes it very easy to create and use FBOs
+by providing the convenience class lglFBO:
+
+~~~~
+#include <glvertex_fbo.h>
+
+...
+
+// fbo declaration
+lglFBO fbo;
+
+...
+
+// create fbo and determine buffer size
+fbo.setupFBO(2048, 2048);
+
+...
+
+// fbo activation
+fbo.activateFBO();
+
+... render something into the fbo ...
+
+// fbo deactivation yields texture object id
+GLuint texid = fbo.deactivateFBO();
+
+... reuse fbo as texture ...
+
+~~~~
+
+Also see the tutorial example "A06_fbo.cpp".
+
+----
+
+PICKING:
+
+Picking is provided by means of a scene graph traversal. Calling
+pickSceneGraph(o, d) on the root node of a scene graph will return the
+closest VBO that is hit by a picking ray. The picking ray is defined
+by an origin o and a direction d. It is specified in eye
+coordinates. Picking is not optimized to be extremely efficient. It
+just uses a bbox test to check each VBO for intersection with the
+picking ray.
+
+Also see the tutorial example "A16_picking.cpp".
+
+----
+
+PHYSICAL SIMULATION:
+
+In order to simulate the physical behavior of moving and colliding
+objects, the lgl_BulletObjects class allows to setup a scene with
+physical objects. For this it utilizes the Bullet Physics library,
+which is auto-detected on compilation, when properly installed.
+
+Here is an example scene setup:
+
+~~~~
+lgl_BulletObjects *objects = new lgl_BulletObjects();
+objects->setGravity(-9.81);
+
+lglSeed();
+for (int i=-1; i<=1; i++)
+   for (int j=-1; j<=1; j++)
+      for (int k=0; k<7; k++)
+      {
+         lgl_BulletCubeObject *cube = new lgl_BulletCubeObject();
+         cube->setColor(vec3(1,0.75,0.5));
+         cube->setPhysicalMass(10);
+         cube->setPhysicalRestitution(0.25);
+         cube->scale(0.5);
+         cube->move(vec3(1.5*i+0.001*(lglRandom()-0.5),k+0.25,1.5*j+0.001*(lglRandom()-0.5)));
+         addObject(cube);
+         lgl_BulletSphereObject *sphere = new lgl_BulletSphereObject();
+         sphere->setColor(vec3(0.5,0.75,1));
+         sphere->setPhysicalMass(10);
+         sphere->setPhysicalRestitution(0.9);
+         sphere->scale(0.5);
+         sphere->move(vec3(1.5*i+0.001*(lglRandom()-0.5),k+0.75,1.5*j+0.001*(lglRandom()-0.5)));
+         addObject(sphere);
+      }
+
+lgl_GraphicalObjectScene::setObjects(objects);
+~~~~
+
+For more information see the tutorial example "A14_physical_objects.cpp".
+
+To compile it, we need to install bullet first. On Ubuntu the
+appropriate command line is "sudo apt-get install
+libbullet-dev". Otherwise we download the bullet source distribution,
+and type the following in the unpacked source directory:
+
+> cmake . && make -j8 && sudo make install
+
+After that we compile the above example by typing the following
+command line in the tutorial directory:
+
+> cmake . && make A14_physical_objects && ./A14_physical_objects
+
+----
+
+GETTING TRANSPARENCY RIGHT:
+
+Getting transparency right is more delicate than one would think in
+the first place. In general, a scene containing one or more
+semi-transparent objects needs to be rendered with a multi-pass
+technique as follows:
+
+The geometry is seperated into two rendering bins, where the first one
+contains the fully opaque objects and the second one contains the
+semi-transparent geometry. Then the bins are rendered in strict order.
+The first bin does not require anything special, but for the second
+bin an appropriate blending function has to be enabled and depth
+writing needs to be disabled.
+
+Now it very much depends on the blending function. If the blending
+function is commutative, (e.g. in the case of multiplicative or
+additive blending), we get away with just enabling the appropriate
+blend mode via lglBlendMode(LGL_BLEND_MULT)
+resp. lglBlendMode(GL_BLEND_ADD).
+
+Unfortunately, most situations require alpha blending, which means
+that we have a non-commutative blending function enabled via
+lglBlendMode(LGL_BLEND_ALPHA). In this case, the objects need to be
+depth-sorted from back to front (so called painter's algorithm).
+
+There is one notable exception, though: If a scene only contains
+semi-transparent geometry with exactly the same color (e.g. just
+semi-transparent gray windows), then depth sorting can be omitted.
+
+For the purpose of depth sorting, the first choice is usually the MPVO
+sorting algorithm (see Peter L. Williams, "Visibility Ordering Meshed
+Polyhedra"). This algorithm computes the depth order based on the
+visibility relationships of convex object shapes. For non-convex
+objects more elaborate algorithms are necessary (see Daniel Weiskopf
+et al., "GPU-Based Interactive Visualization Techniques").
+
+Since all those algorithms come at a substantial cost, a different
+approach is chosen for use cases, where performance is more important
+than accuracy, so that an approximate depth ordering approach can be
+utilized. To compute an approximate depth order, it is sufficient to
+sort the objects based on their eye distance (aka distance-based depth
+sorting). Then the visibility ordering will be close to the ones
+computed by the more elaborated algorithms, but in some special cases
+one will be able to spot the difference, although it might not be much
+apparent. And for the case of overlapping geometry one will never get
+it right without disecting the geometry.
+
+But the ordering will get close if the objects are sphere-shaped and
+do not differ much in size. If this is not the case, objects need to
+be subdivided until their sizes match. Alternatively, the Power-Sort
+algorithm can be applied, if the geometry is strictly convex (see
+Karasick et al., "Visualization of Three-Dimensional Delaunay
+Meshes"). Also see Stefan Roettger, "Volumetric Methods for the
+Real-Time Display of Natural Gaseous Phenomena", PhD Thesis,
+University of Stuttgart, Germany, 2004.
+
+After those theoretical discussions, we get back to using the glVertex
+library: In the case of a physical object simulation as outlined in
+the previous section, the glVertex library automatically applies a
+distance-based depth sort to the semi-transparent objects in the
+second geometry bin.
+
+For more information see the tutorial example "A15_depth_sorting.cpp".
+
+----
+
+OPENGL ES:
+
+The glVertex package works with traditional desktop OpenGL as
+described in detail in the preceding sections. It also works with
+OpenGL ES, when told like so:
+
+~~~~
+#define LGL_USE_GLES
+#include <glvertex.h>
+~~~~
+
+To check out an Android OpenGL ES example, open the
+"qt_examples/qt_teapot.pro" file of the Qt teapot example with Qt
+Creator. If you installed the Android SDK and NDK properly for Qt
+Creator, you may deploy the example to your Android device and see the
+famous Utah Melitta teapot spinning around in full-screen. For more
+info on Android deployment please see the according documentation on
+the Qt developer site.
+
+Note: For OpenGL ES the GLSL shader version must be either 100, 300 or
+310 corresponding to OpenGL ES 1.0, 3.0, or 3.1. For traditional
+OpenGL the GLSL version 120 corresponds to OpenGL 2.1, version 130
+corresponds to OpenGL 3.0, 140 to 3.1, 150 to 3.2, 330 to 3.3, and so
+on...
+
+----
+
+INCLUDING GLVERTEX INTO THIRD-PARTY SOFTWARE:
+
+When using the glVertex library in third-party software, it is
+required to include the glvertex header in the module, which uses it,
+as the first include file. When using it in multiple modules, it is
+recommended to create a global singleton "GL gl" and access the
+library's functions through that singleton:
+
+~~~~
+gl.lglSomething(...);
+~~~~
+
+You can also clone the state:
+
+~~~~
+lglCloneState(gl);
+lglSomething(...);
+~~~~
+
+The easiest way to create that global singleton is to set it up as a
+reference to a static local variable in a static method like so:
+
+~~~~
+static GL *getGL()
+{
+   static GL gl;
+   return(&gl);
+}
+
+GL *gl = getGL();
+gl->lglSomething(...);
+~~~~
+
+----
+
+QT CONVENIENCE CLASSES:
+
+The glVertex package contains several convenience classes to easily
+setup a core profile with Qt.
+
+The most important ones are the "lgl_Qt_GLWindow" and
+"lgl_Qt_GLWidget" classes. The first class creates a system window
+with a core profile (Qt5 style), the second class creates a widget
+with a core profile (Qt4 style), that can be used just like any other
+Qt widget to construct a graphical user interface. To create a window
+with a core profile, we simply include the "glvertex_qt_glwindow.h" or
+"glvertex_qt_glwidget.h" header, derive from the respective class and
+implement the following two methods:
+
+* initializeOpenGL(): called once when the OpenGL context with a core
+  profile is available. Put OpenGL state initializations here, for
+  example glClearColor(1,1,1,1), glEnable(GL_DEPTH_TEST),
+  glDisable(GL_CULL_FACE) etc.
+
+* renderOpenGL(double dt): called continuously to enable animations
+  with a certain frame rate. Put OpenGL rendering commands here, for
+  example lglBegin(), lglVertex(), lglEnd() etc. The parameter dt
+  contains the elapsed time in seconds since the last rendered
+  frame. The frame rate can be set with the setFPS() method. The
+  default is 30 frames per second.
+
+Building on the above classes, the two derived classes
+"lgl_Qt_GLWindowUI" and "lgl_Qt_GLWidgetUI" both feature a track
+ball. They also inherit the following key commands:
+
+* ESC: quit
+* Ctrl-q: quit
+* Ctrl-z: toggle Z-test
+* Ctrl-c: toggle back-face culling
+* Ctrl-b: toggle alpha blending
+* Ctrl-a: toggle A-test
+* Ctrl-w: toggle wire frame mode
+* Ctrl-0: black background
+* Ctrl-1: white background
+* Ctrl-o: toggle override
+* Ctrl-f: toggle full-screen
+* Ctrl-r: reset manipulator
+* Space: toggle animation
+
+For quickly setting up an OpenGL prototyping application, it is
+recommended to derive from the "lgl_Qt_GLUI" class. To start with an
+empty programming template just copy the "qt_template" directory and
+fill in legacy-style OpenGL commands in the renderOpenGL() method in
+"qt_template.cpp".
+
+For your convenience, the lgl_Qt_GLUI class adds diagnostic OpenGL
+output, easy key handling via the overwritable keyPressed() method,
+mouse handling via a manipulator trackball and an overwritable
+doubleClick() method. By default, a double click will toggle the wire
+frame mode and the default keyPressed() implementation will check for
+the following additional keyboard shortcuts:
+
+* Ctrl-s: save screen snapshot
+* Ctrl-t: toggle continuous screen capture
+* Ctrl-p: toggle frame rate info
+* Ctrl-k: print key info
+
+The lgl_Qt_GLUI class also provides methods for handling command line
+arguments and options in the style "--option". Any option may contain
+a "=..."  appendix. The following methods are available to handle
+command line arguments:
+
+* args() -> number of arguments
+* opts() -> number of options starting with either "-" or "--"
+* hasOption("option") -> check for a particular option
+* getOptionString("option") -> get the associated option appendix string
+* getOptionValue("option") -> get the associated option appendix value
+
+By default, the lgl_Qt_GLUI convenience class understands the
+following options:
+* --help -> show usage info
+* --fullscreen -> toggle fullscreen mode
+* --wireframe -> toggle wireframe mode
+* --pause -> pause animations
+
+It also understands the standard Qt command line options, for example:
+* -geometry 1024x768-0-0
+
+Derived classes like lgl_Scene_GLUI (see below) may understand more
+options. Usage details are available with the "--help" option.
+
+The following example shows how to inherit from "lgl_Qt_GLUI", render
+a single rotating directionally lit diffuse triangle and toggle
+lighting on or off when pressing the Enter key or when a mouse double
+click is encountered:
+
+~~~~
+#include <glvertex_qt_glui.h>
+
+class Qt_GLWindow: public lgl_Qt_GLUI
+{
+public:
+
+   Qt_GLWindow() : lgl_Qt_GLUI() {}
+
+protected:
+
+   void initializeOpenGL()
+   {
+      // setup OpenGL
+      glClearColor(1,1,1,1);
+      glEnable(GL_DEPTH_TEST);
+      glDisable(GL_CULL_FACE);
+
+      // disable lighting
+      lglLighting(false);
+   }
+
+   void renderOpenGL(double dt)
+   {
+      // clear frame buffer
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+      // projection setup
+      double fovy = 90;
+      double aspect = (double)width()/height();
+      double nearp = 0.1;
+      double farp = 10;
+      lglMatrixMode(LGL_PROJECTION);
+      lglLoadIdentity();
+      lglPerspective(fovy, aspect, nearp, farp);
+
+      // viewing setup
+      lglMatrixMode(LGL_MODELVIEW);
+      lglLoadIdentity();
+      lglLookAt(0,0,1, 0,0,0, 0,1,0);
+
+      // define local rotated coordinate system
+      static double angle=0; // rotation angle in degrees
+      static const double omega=10; // rotation speed in degrees/s
+      angle+=dt*omega;
+      lglRotate(angle, 0,1,0);
+
+      // lighting setup
+      lglLightDirection(vec3f(0,0,1), true);
+      lglLightParameters(vec3f(0), vec3f(1), vec3f(0));
+
+      // render triangle
+      lglBegin(LGL_TRIANGLES);
+         lglColor(1,0,0);
+         lglNormal(-1,-1,1);
+         lglVertex(-0.5,-0.5,0);
+         lglColor(0,1,0);
+         lglNormal(1,-1,1);
+         lglVertex(0.5,-0.5,0);
+         lglColor(0,0,1);
+         lglNormal(0,1,1);
+         lglVertex(0,0.5,0);
+      lglEnd();
+   }
+
+   void keyPressed(char key)
+   {
+      if (key == '\r')
+         lglLighting(!lglGetLighting());
+   }
+
+   void doubleClick(double x, double y)
+   {
+      keyPressed('\r');
+   }
+
+};
+
+int main(int argc, char *argv[])
+{
+   QApplication app(argc, argv);
+
+   // create OpenGL window
+   Qt_GLWindow main;
+   main.resize(640, 480);
+   main.show();
+
+   // start event loop
+   return(app.exec());
+}
+~~~~
+
+See the full source code of the above Qt example in
+"qt_examples/qt_triangle.cpp". To compile it on the command line type:
+
+> (cd qt_examples; qmake qt_triangle.pro && make)
+
+Or open the .pro file with Qt Creator and hit the Run button.
+
+Note: On MacOS you need to tell Qt Creator, where the Qt installation
+is located: Tools -> Options -> Build & Run -> Qt Versions -> Add ->
+File Browser -> select appropriate "qmake" -> e.g. in
+"/usr/local/qt.../bin/". As an alternative you may also use XCode. To
+create the corresponding XCode projects you need to run the
+"generate.sh" script from the command line.
+
+----
+
+GLSL EDITOR:
+
+The glVertex package comes with a GLSL editor based on Qt. It allows
+basic editing of vertex and fragment GLSL programs. The editor is not
+meant for experts, it is meant for beginners to have fun writing their
+very first GLSL programs with it. To compile and run the GLSL editor,
+type the following command line:
+
+> make editor && qt_editor/qt_editor
+
+For more information please read the help text of the editor.
+
+----
+
+INLINE GLSL EDITOR:
+
+We can also edit any custom shader source while the program is
+running. For that purpose, we use the QT inline editor, which shows
+the actual shader source in a separate window. The inline editor
+assumes that the shader is given as an inline "const char shader[] =
+..." C-string. The editor will load that string from the source code
+and write the modified shader back as an inline C-string when the
+program is closed.
+
+~~~~
+#include <glvertex_qt_shadereditor.h>
+
+const char shader[] = "...";
+GLuint id = lglCompileGLSLProgram(shader);
+
+create_lgl_Qt_ShaderEditor("shader", &id);
+
+lglUseProgram(id);
+~~~~
+
+The first parameter to the above call is the variable name of the
+shader C-string. The second parameter is a pointer to the shader id as
+returned by the OpenGL GLSL compiler.
+
+----
+
+IMAGE FILE FORMATS AND TEXTURES:
+
+The glVertex library supports the PNM and RAW image file formats.
+
+Here is an example to load a PPM image file:
+
+~~~~
+#include <glvertex_pnmformat.h>
+
+unsigned char *image;
+int width, height, components;
+
+unsigned char *image = lglReadPnmImage("example.ppm", &width, &height, &components);
+if (!image) lglWarning("could not load pnm image");
+~~~~
+
+In the above example the component parameter is
+* 1 for grayscale images
+* 2 for grayscale 16-bit images
+* 3 for RGB images
+* 4 for RGBA images
+
+Here is an example to load a raw image file:
+
+~~~~
+#include <glvertex_rawformat.h>
+
+unsigned char *image;
+long long width, height;
+unsigned int components;
+
+unsigned char *image = lglLoadRawImage("image.256x256_3.raw", &width, &height, &components);
+if (!image) lglWarning("could not load raw image");
+~~~~
+
+In the above example the file format needs to be encoded into the file name:
+* as in name.size_cellformat.raw
+* e.g. name.256x256.raw (grayscale image)
+* e.g. name.256x256_3.raw (rgb image)
+* e.g. name.256x256_u2m.raw (16-bit msb unsigned grayscale image)
+* cell format modifiers:
+*  1 = 8 bit
+*  2 = 16 bit
+*  3 = rgb
+*  4 = rgba
+*  6 = rgb 16 bit
+*  8 = rgba 16 bit
+*  u = unsigned
+*  s = signed
+*  m = msb
+*  l = lsb
+* default modifiers = u1m
+
+Here is an example to load a PNM (or RAW) image file into a texture object:
+
+~~~~
+#include <glvertex_texformats.h>
+...
+GLuint texid = lglLoadTexture("image.ppm");
+...
+lglTexture2D(texid);
+~~~~
+
+With Qt as user interface library, the glVertex library also supports
+PNG, JPEG and all other formats supported by Qt.
+
+Here is an example to load a PNG image file into a texture object:
+
+~~~~
+#include <glvertex_qt.h>
+...
+GLuint texid = lglLoadQtTexture("image.png");
+...
+lglTexture2D(texid);
+~~~~
+
+----
+
+OBJECT FILE FORMAT (ALIAS WAVEFRONT OBJ):
+
+The library supports the Alias Wavefront OBJ file format (via
+lglLoadObj and lglSaveObj). This is a simple textual format for
+indexed face sets. It essentially defines vertices ("v"), normals
+("vn") and texture coordinates ("vt") each on a single line. Then the
+geometric primitives are given each on a single line by specifiying
+the corresponding vertex, normal and texture coordinate indices of the
+faces ("f"). Here is an example, which just specifies a single
+triangle face made up from three indexed vertices:
+
+~~~~
+v -1 -0.5 0
+v 1 -0.5 0
+v 0 0.5 0
+f 1 2 3
+~~~~
+
+The same example with texture coordinates (uv-mapping):
+
+~~~~
+v -1 -0.5 0
+v 1 -0.5 0
+v 0 0.5 0
+vt 0 0
+vt 1 0
+vt 0 1
+f 1/1 2/2 3/3
+~~~~
+
+And the same example with a single normal per face:
+
+~~~~
+v -1 -0.5 0
+v 1 -0.5 0
+v 0 0.5 0
+vn 0 0 1
+f 1//1 2//1 3//1
+~~~~
+
+The official OBJ format specification allows a face to be either a
+triangle or a quad (or even a polygon). The latter is not supported by
+the glVertex OBJ format reader, so if you want to export an object
+file with blender, you need to make sure to check the "triangulate
+faces" option. The library, however, supports the inofficial extension
+of specifying per-vertex colors by appending 3 additional values to
+the vertex specification:
+
+~~~~
+v -1 -0.5 0 1 0 0
+v 1 -0.5 0 0 1 0
+v 0 0.5 0 0 0 1
+f 1 2 3
+~~~~
+
+For an example how to load an obj file, see the Qt OBJ-Format example
+in "qt_examples/qt_obj.cpp". To load a particular obj file, specify
+its file name as argument on the command line. To compile and start it
+on the command line type:
+
+> (cd qt_examples; cmake . && make qt_obj && ./qt_obj teapot.obj)
+
+----
+
+QT GEARS:
+
+The "Qt Gears" example is a modern version of the "glxgears" demo, which
+has been part of the Mesa library for decades. See the full source
+code of the example in "qt_examples/qt_gears.cpp". To compile it on
+the command line type:
+
+> (cd qt_examples; qmake qt_gears.pro && make)
+
+----
+
+TUTORIAL:
+
+The "tutorial" folder contains many more examples with respect to the
+OpenGL pipeline, VBOs and GLSL shaders. To compile the examples type
+"cmake . && make -j8" on the command line. For more information please
+have a look at the tutorial README.
+
+----
+
+DOXYGEN DOCUMENTATION:
+
+A detailed API and class documentation is available via Doxygen. Just
+run the following command in the top level directory:
+
+> make docs
+
+This will generate HTML pages with according documentation in the
+"docs/html" folder.
+
+Note: To generate the documentation, the "doxygen" and "graphviz"
+software packages need to be installed.
+
+To read the documentation open the "index.html" file with a browser
+like Firefox:
+
+> firefox index.html
+
+As a starting point, we browse the documentation of the file
+"glvertex_api.h", which lists the available functions of the core API.
+
+----
+
+PLATFORM NOTES:
+
+This software is mainly intended to be used with OpenGL 2.1 and higher
+(resp. OpenGL ES 2.0 and higher). For OpenGL versions 3.0 and higher
+full support for VBOs and GLSL shaders is enabled as provided by the
+respective core profile. For OpenGL versions lower than 3.0, VBOs and
+GLSL shaders are still available, but of course no functionality that
+requires a core profile. For OpenGL versions less than 2.1 the library
+will fall back to OpenGL 1.2 compatibility mode, which means that the
+legacy OpenGL 1.2 API will be used. In this case vertex arrays will be
+used instead of vertex buffers and custom shaders will be silently
+ignored.
+
+On Linux and MacOS all recent OpenGL drivers including Intel, NVIDIA
+and ATI drivers run stable with this package. Same for Windows and
+OpenGL ES on Android.
+
+On some older versions of MacOS X, however, the vertex buffer object
+implementation is seriously broken. This may result in the improper
+display of multiple vertex buffers. To my knowledge at least MacOS X
+10.5 is affected. In this case it is recommended to upgrade to a more
+recent version such as MacOS X 10.11 or later.
+
+On some Linux platforms the GCC 4.8 and 4.9 packages contain a broken
+version of the GNU dynamic linker. On Ubuntu 14.04 LTS and Open SuSe
+13.1, for example, this may result in an immediate crash when
+dynamically preloading the NVIDIA OpenGL driver. Ubuntu 16.04 LTS with
+GCC 5.2 is not affected.
+
+----
+
+Now, if you like this software, please just use it happily ever after!
+
+Stefan

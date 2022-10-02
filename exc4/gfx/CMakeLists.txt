@@ -1,0 +1,24 @@
+# header list
+SET(GFX_HDRS
+   gl.h
+   shaderprogram.h
+   )
+
+# module list
+SET(GFX_SRCS
+   gl.cpp
+   shaderprogram.cpp
+   )
+
+# Windows definitions
+IF (MSVC)
+   ADD_DEFINITIONS(-D_CRT_SECURE_NO_DEPRECATE)
+ENDIF (MSVC)
+
+# library
+SET(GFX_NAME GFX)
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../headers)
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../glslmath)
+ADD_LIBRARY(${GFX_NAME} ${GFX_SRCS} ${GFX_HDRS})
+SET(GFX_LIBRARY ${GFX_NAME} CACHE INTERNAL "")
